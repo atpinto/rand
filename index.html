@@ -1,526 +1,709 @@
-Content is user-generated and unverified.
-
-
-Learn how to customize
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Randomisation Schedule — a simulation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>The Randomisation Table Simulator</title>
 <style>
-:root{
-  --paper:#E9EDE3;
-  --paper-2:#F4F6EF;
-  --ink:#18262A;
-  --ink-soft:#4C5A5B;
-  --rule:#B4BEAD;
-  --rule-soft:#D2D9CB;
-  --stamp:#9C2B2B;
-  --arm-a:#2C6A72;
-  --arm-b:#9A7212;
-  --kraft:#C9B48C;
-  --focus:#2C6A72;
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  background:
-    repeating-linear-gradient(0deg, transparent 0 27px, rgba(24,38,42,.045) 27px 28px),
-    var(--paper);
-  color:var(--ink);
-  font-family:"IBM Plex Sans",system-ui,sans-serif;
-  font-size:15px;
-  line-height:1.55;
-  -webkit-font-smoothing:antialiased;
-}
-.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
-
-/* ---------- header ---------- */
-header.masthead{
-  border-bottom:2px solid var(--ink);
-  padding-bottom:14px;margin-bottom:8px;
-}
-.eyebrow{
-  font-family:"Courier Prime",monospace;
-  font-size:12px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-soft);
-}
-h1{
-  font-family:"IBM Plex Sans Condensed",sans-serif;
-  font-weight:700;font-size:clamp(30px,5.2vw,52px);
-  line-height:1.02;letter-spacing:-.015em;margin:6px 0 10px;
-}
-.standfirst{max-width:62ch;color:var(--ink-soft);margin:0 0 4px}
-.filed{
-  font-family:"Courier Prime",monospace;font-size:12px;color:var(--ink-soft);
-  display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;
-}
-.filed b{font-weight:700;color:var(--ink)}
-
-/* ---------- panels ---------- */
-.panel{
-  background:var(--paper-2);
-  border:1px solid var(--rule);
-  padding:18px 18px 20px;
-  margin-top:26px;
-}
-.panel-title{
-  font-family:"Courier Prime",monospace;
-  font-size:12px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ink-soft);
-  border-bottom:1px solid var(--rule-soft);
-  padding-bottom:8px;margin-bottom:16px;
-  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
-}
-.panel-title span.hint{letter-spacing:0;text-transform:none;font-size:12px}
-
-.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:14px 18px}
-.field label{
-  display:block;font-family:"Courier Prime",monospace;font-size:11px;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
-}
-select,input[type=number]{
-  width:100%;padding:8px 9px;font-family:"IBM Plex Sans",sans-serif;font-size:14px;
-  background:#fff;border:1px solid var(--rule);color:var(--ink);border-radius:0;
-}
-select:focus-visible,input:focus-visible,button:focus-visible{
-  outline:2px solid var(--focus);outline-offset:1px;
-}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
-button{
-  font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:600;font-size:14px;
-  letter-spacing:.02em;padding:9px 16px;border:1px solid var(--ink);
-  background:var(--ink);color:var(--paper-2);cursor:pointer;border-radius:0;
-}
-button.ghost{background:transparent;color:var(--ink)}
-button:disabled{opacity:.35;cursor:not-allowed}
-button:hover:not(:disabled){transform:translateY(-1px)}
-button{transition:transform .12s ease, background .12s ease}
-.note{font-size:13px;color:var(--ink-soft);margin-top:10px}
-
-/* ---------- two column ---------- */
-.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;margin-top:26px;align-items:start}
-@media(max-width:880px){.cols{grid-template-columns:1fr}}
-
-/* ---------- envelopes (signature) ---------- */
-.rack{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:6px}
-.env{
-  position:relative;width:74px;height:50px;
-  background:linear-gradient(180deg,#DCCBA6 0%,var(--kraft) 100%);
-  border:1px solid #A8926A;
-  display:flex;align-items:flex-end;justify-content:center;
-  font-family:"Courier Prime",monospace;font-size:11px;color:#4A3E28;
-  padding-bottom:4px;
-}
-.env::before{
-  content:"";position:absolute;inset:0;
-  border-bottom:1px solid rgba(74,62,40,.35);
-  clip-path:polygon(0 0,50% 58%,100% 0,100% 0,0 0);
-  background:rgba(255,255,255,.28);
-}
-.env.open{
-  background:#F4F6EF;border-color:var(--rule);color:var(--ink-soft);
-  align-items:center;padding-bottom:0;
-}
-.env.open::before{clip-path:polygon(0 0,50% -40%,100% 0,100% 0,0 0);opacity:.4}
-.env.open .arm{font-weight:700;font-size:13px}
-.env.next{box-shadow:0 0 0 2px var(--stamp);}
-.env .armA{color:var(--arm-a)}
-.env .armB{color:var(--arm-b)}
-@keyframes tear{0%{transform:rotate(-3deg) scale(.96)}60%{transform:rotate(2deg) scale(1.04)}100%{transform:none}}
-.env.justopened{animation:tear .38s ease-out}
-@media(prefers-reduced-motion:reduce){.env.justopened{animation:none}button:hover{transform:none}}
-
-.enrol-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:16px}
-.enrol-row .field{min-width:150px}
-
-.reveal-box{
-  border:1px dashed var(--rule);padding:14px;margin-top:14px;
-  font-family:"Courier Prime",monospace;font-size:13px;min-height:74px;
-}
-.reveal-box .big{
-  font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;
-  font-size:24px;letter-spacing:.01em;display:block;margin-top:4px;
-}
-
-/* ---------- schedule table ---------- */
-.tablewrap{max-height:520px;overflow:auto;border:1px solid var(--rule);background:#fff}
-table{border-collapse:collapse;width:100%;font-family:"Courier Prime",monospace;font-size:13px}
-thead th{
-  position:sticky;top:0;background:var(--ink);color:var(--paper-2);
-  font-weight:700;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
-  padding:8px 9px;text-align:left;white-space:nowrap;
-}
-tbody td{padding:5px 9px;border-bottom:1px solid var(--rule-soft);white-space:nowrap}
-tbody tr.blockstart td{border-top:1px solid var(--rule)}
-tbody tr.used{background:#F4F6EF}
-.masked{letter-spacing:.12em;color:#9AA69A}
-.armA{color:var(--arm-a);font-weight:700}
-.armB{color:var(--arm-b);font-weight:700}
-.stamp{
-  color:var(--stamp);font-weight:700;font-size:11px;letter-spacing:.1em;
-  border:1px solid var(--stamp);padding:0 4px;display:inline-block;transform:rotate(-1.5deg);
-}
-
-/* ---------- diagnostics ---------- */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:18px}
-.metric{border-left:3px solid var(--rule);padding-left:11px}
-.metric .k{font-family:"Courier Prime",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
-.metric .v{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:26px;line-height:1.1}
-.metric.warn{border-left-color:var(--stamp)}
-.metric.warn .v{color:var(--stamp)}
-svg{display:block;width:100%;height:auto}
-
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-family:"Courier Prime",monospace;font-size:12px;color:var(--ink-soft);margin-top:8px}
-.swatch{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px}
-
-/* ---------- prose ---------- */
-.prose{max-width:70ch;margin-top:26px}
-.prose h2{
-  font-family:"IBM Plex Sans Condensed",sans-serif;font-size:22px;margin:26px 0 8px;
-}
-.prose p{color:var(--ink-soft);margin:0 0 12px}
-.prose strong{color:var(--ink)}
-footer{margin-top:44px;border-top:1px solid var(--rule);padding-top:14px;
-  font-family:"Courier Prime",monospace;font-size:12px;color:var(--ink-soft)}
+  :root{
+    --bg:#ece4d0;            /* aged paper */
+    --card:#f9f5e8;
+    --ink:#262218;
+    --muted:#7d7360;
+    --accent:#9e2b1e;        /* stamp red */
+    --accent-dark:#7c1f14;
+    --treat:#2e6b4f;         /* ledger green */
+    --treat-soft:#dde9da;
+    --ctrl:#a4700f;          /* ochre */
+    --ctrl-soft:#f1e3bd;
+    --pick:#2e4057;          /* ink blue */
+    --skip:#a89f8c;
+    --line:#cfc3a2;
+    --serif:Georgia,"Palatino Linotype","Book Antiqua","Times New Roman",serif;
+    --mono:"Courier New",Courier,"Nimbus Mono PS",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);background:var(--bg);color:var(--ink);line-height:1.5}
+  header{background:#262218;color:#f2ead9;padding:30px 20px 24px;text-align:center;border-bottom:6px double #9e2b1e}
+  header h1{margin:0 0 8px;font-size:1.7rem;font-weight:700;letter-spacing:.04em}
+  header p{margin:0 auto;max-width:760px;font-size:.95rem;font-style:italic;color:#d8cdb2}
+  header .tag{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:#f2ead9;border:1px solid #9e2b1e;padding:3px 10px;margin-bottom:12px}
+  main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:18px 20px;margin-bottom:18px}
+  .card h2{margin:0 0 10px;font-size:1.1rem;display:flex;align-items:center;gap:10px;font-variant:small-caps;letter-spacing:.03em;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:var(--accent);color:#f9f5e8;font-family:var(--serif);font-size:.95rem;flex:none;border-radius:2px}
+  .muted{color:var(--muted);font-size:.88rem}
+  .workspace{display:grid;grid-template-columns:minmax(330px,430px) 1fr;gap:18px;align-items:start}
+  @media(max-width:880px){.workspace{grid-template-columns:1fr}}
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:end}
+  .ctrl{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  select,input[type=number]{padding:6px 8px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;font-family:var(--mono);color:var(--ink)}
+  input[type=range]{width:150px;accent-color:var(--accent)}
+  button{font-family:var(--mono);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;border:1px solid var(--ink);border-radius:2px;padding:9px 15px;cursor:pointer;background:#fffdf4;color:var(--ink)}
+  button:hover{background:#f1e9d2}
+  button.primary{background:var(--accent);border-color:var(--accent-dark);color:#f9f5e8}
+  button.primary:hover{background:var(--accent-dark)}
+  button.ghost{background:transparent}
+  .hidden{display:none !important}
+  #grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:400px;margin-top:12px}
+  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:15px;background:#f4efdf;border:1px solid #d8ceac;border-radius:2px;cursor:pointer;user-select:none;color:#3a3324}
+  .cell:hover{border-color:var(--accent)}
+  .cell.start{outline:3px solid var(--pick);outline-offset:-1px}
+  .cell.cursor{outline:3px dashed var(--accent);outline-offset:-1px}
+  .cell.u-T{background:var(--treat);border-color:var(--treat);color:#f9f5e8}
+  .cell.u-C{background:var(--ctrl);border-color:var(--ctrl);color:#f9f5e8}
+  .cell.pick{background:var(--pick);border-color:var(--pick);color:#f9f5e8}
+  .cell.skip{background:#eee7d3;color:var(--skip);text-decoration:line-through}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  .patient-card{display:flex;align-items:center;gap:16px;background:#efe7cf;border:1px solid var(--line);border-radius:2px;padding:14px;margin:12px 0}
+  .patient-card .pnum{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em}
+  .patient-card .psrc{font-size:.92rem;color:#4a4130;max-width:300px}
+  .badge{margin-left:auto;font-family:var(--serif);font-size:1.5rem;font-weight:700;padding:10px 18px;border-radius:2px;color:#f9f5e8;background:#8b8371;min-width:64px;text-align:center}
+  .badge.T{background:var(--treat)} .badge.C{background:var(--ctrl)}
+  #narration{background:#f6efd9;border:1px solid #cbbb8f;border-left:4px solid var(--accent);border-radius:2px;padding:10px 13px;font-size:.92rem;min-height:44px}
+  .tally{display:flex;gap:14px;margin:14px 0 6px}
+  .tally .grp{flex:1}
+  .tally .lbl{font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between}
+  .bar{height:12px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;overflow:hidden;margin-top:4px}
+  .bar div{height:100%;width:0;transition:width .25s}
+  #barT div{background:var(--treat)} #barC div{background:var(--ctrl)}
+  #chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;min-height:26px}
+  .chip{width:22px;height:22px;border-radius:2px;color:#f9f5e8;font-family:var(--mono);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .chip.T{background:var(--treat)} .chip.C{background:var(--ctrl)}
+  #log{max-height:150px;overflow:auto;font-family:var(--mono);font-size:.78rem;margin:10px 0 0;padding-left:18px;color:var(--muted)}
+  canvas{width:100%;height:auto;background:#fffdf4;border:1px solid var(--line);border-radius:2px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:10px;font-size:.9rem}
+  .pill{display:inline-block;padding:2px 9px;border-radius:2px;font-family:var(--mono);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+  .pill.T{background:var(--treat-soft);color:var(--treat)} .pill.C{background:var(--ctrl-soft);color:var(--ctrl)}
+  .notes{columns:2;column-gap:30px;font-size:.9rem}
+  @media(max-width:760px){.notes{columns:1}}
+  .notes h3{font-size:.98rem;margin:12px 0 4px;break-after:avoid;font-variant:small-caps}
+  .notes ul{margin:4px 0;padding-left:20px}
+  footer{text-align:center;color:var(--muted);font-style:italic;font-size:.8rem;padding:10px}
+  #errBanner{display:none;position:fixed;top:0;left:0;right:0;background:var(--accent);color:#f9f5e8;padding:10px 16px;font-family:var(--mono);font-size:13px;z-index:99}
+  details summary{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="errBanner"></div>
 
-<header class="masthead">
-  <div class="eyebrow">Trial methods · teaching simulation</div>
-  <h1>The randomisation schedule</h1>
-  <p class="standfirst">Before web-based systems, treatment allocation ran on a printed list. A statistician generated it in advance, sealed each line in an opaque numbered envelope, and the site opened them strictly in order. Generate a schedule below, enrol participants one at a time, and watch what the clinician could — and could not — work out.</p>
-  <div class="filed">
-    <span>Prepared by <b>Trial Statistician</b></span>
-    <span>Held by <b>Pharmacy / independent office</b></span>
-    <span>Investigator access <b>Sequential only</b></span>
-  </div>
+<header>
+  <h1>The Randomisation Table Simulator</h1>
+     <i>Armando Teixeira-Pinto</i>
 </header>
 
-<section class="panel">
-  <div class="panel-title">1 · Prepare the schedule <span class="hint">The seed makes it reproducible — the same seed always gives the same list.</span></div>
+<main>
+
+<section class="card">
+  <h2>How a randomisation table was used &mdash; the four classic steps</h2>
+  <p class="muted" style="margin-top:0">
+    <b>1.</b> Open the table of random digits. &nbsp;
+    <b>2.</b> Choose a starting point &ldquo;by chance&rdquo; (traditionally: close your eyes and drop a pencil on the page). &nbsp;
+    <b>3.</b> Apply a pre-written rule converting digits into allocations. &nbsp;
+    <b>4.</b> Enrol patients in order and read off their allocation, one digit at a time.
+    Nobody can predict or choose the next assignment &mdash; that is the whole point.
+  </p>
+</section>
+
+<section class="card">
+  <h2><span class="stepnum">1</span> Set up your trial</h2>
   <div class="controls">
-    <div class="field">
-      <label for="method">Method</label>
+    <label class="ctrl">Patients to enrol
+      <input type="number" id="nPatients" min="4" max="120" value="20">
+    </label>
+    <label class="ctrl">Randomisation method
       <select id="method">
-        <option value="simple">Simple randomisation</option>
-        <option value="fixed" selected>Permuted blocks — fixed size</option>
-        <option value="random">Permuted blocks — random sizes</option>
+        <option value="simple">Simple (like flipping a coin)</option>
+        <option value="blocked">Blocked (keeps groups balanced)</option>
       </select>
-    </div>
-    <div class="field" id="bsWrap">
-      <label for="blockSize">Block size</label>
+    </label>
+    <label class="ctrl" id="ruleWrap">Digit rule
+      <select id="rule">
+        <option value="lowhigh">0&ndash;4 &rarr; Control &middot; 5&ndash;9 &rarr; Treatment</option>
+        <option value="oddeven">Odd &rarr; Treatment &middot; Even &rarr; Control</option>
+      </select>
+    </label>
+    <label class="ctrl hidden" id="blockWrap">Block size
       <select id="blockSize">
-        <option>2</option><option>4</option><option selected>6</option><option>8</option>
+        <option value="4">4 (permutations of TTCC)</option>
+        <option value="6">6 (permutations of TTTCCC)</option>
       </select>
-    </div>
-    <div class="field">
-      <label for="ratio">Allocation ratio (A:B)</label>
-      <select id="ratio">
-        <option value="1:1" selected>1:1</option>
-        <option value="2:1">2:1</option>
+    </label>
+    <label class="ctrl">Reading direction
+      <select id="direction">
+        <option value="across">Across rows &rarr;</option>
+        <option value="down">Down columns &darr;</option>
       </select>
-    </div>
-    <div class="field">
-      <label for="strata">Stratification</label>
-      <select id="strata">
-        <option value="1">None — one list</option>
-        <option value="2" selected>By site — 2 sites</option>
-        <option value="3">By site — 3 sites</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="perStratum">Lines per list</label>
-      <input type="number" id="perStratum" value="24" min="6" max="120" step="2">
-    </div>
-    <div class="field">
-      <label for="seed">Seed</label>
-      <input type="number" id="seed" value="2026" min="1" max="999999">
-    </div>
+    </label>
+    <button class="primary" id="btnGenerate">Generate new table</button>
   </div>
-  <div class="actions">
-    <button id="gen">Generate schedule</button>
-    <button class="ghost" id="unblind">Show the full list (unblinded view)</button>
-  </div>
-  <p class="note" id="genNote"></p>
+  <p class="muted" id="ruleLegend" style="margin-bottom:0;margin-top:10px"></p>
 </section>
 
-<div class="cols">
+<div class="workspace">
 
-  <section class="panel" style="margin-top:22px">
-    <div class="panel-title">2 · Enrol a participant</div>
-    <div class="enrol-row">
-      <div class="field">
-        <label for="site">Stratum</label>
-        <select id="site"></select>
+  <section class="card">
+    <h2><span class="stepnum">2</span> The random digit table</h2>
+    <p class="muted" style="margin-top:0">Each cell is one random digit (0&ndash;9).
+       Click any cell to place your pencil, or leave it to chance:</p>
+    <button id="btnPencil" class="ghost">Drop the pencil (random start)</button>
+    <div id="grid"></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--treat)"></span>digit &rarr; Treatment</span>
+      <span><span class="swatch" style="background:var(--ctrl)"></span>digit &rarr; Control</span>
+      <span><span class="swatch" style="background:var(--pick)"></span>block permutation pick</span>
+      <span><span class="swatch" style="background:#eee7d3"></span>skipped digit</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="stepnum">3</span> Enrol patients &amp; allocate</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button class="primary" id="btnStep">Next patient</button>
+      <button id="btnPlay">Play</button>
+      <button id="btnRunAll">Run all</button>
+      <button class="ghost" id="btnReset">Reset run</button>
+      <label class="ctrl" style="margin-left:auto">Speed
+        <input type="range" id="speed" min="80" max="900" value="380">
+      </label>
+    </div>
+
+    <div id="narration" style="margin-top:12px">Welcome. First choose a starting cell (or drop the pencil), then press <b>Next patient</b>.</div>
+
+    <div class="patient-card">
+      <div>
+        <div class="pnum" id="pNum">No patient yet</div>
+        <div class="psrc" id="pSrc">The next patient&rsquo;s allocation will appear here.</div>
       </div>
-      <button id="enrol">Open next envelope</button>
-      <button class="ghost" id="fill">Fill the trial</button>
+      <div class="badge" id="pBadge">?</div>
     </div>
-    <div class="rack" id="rack"></div>
-    <div class="reveal-box" id="reveal">No envelope opened yet. Choose a stratum and open the next one in sequence.</div>
-  </section>
 
-  <section class="panel" style="margin-top:22px">
-    <div class="panel-title">3 · The schedule as held by pharmacy <span class="hint" id="viewState">concealed</span></div>
-    <div class="tablewrap">
-      <table id="tbl">
-        <thead><tr>
-          <th>Alloc. no.</th><th>Stratum</th><th>Block</th><th>Pos.</th><th>Treatment</th><th>Status</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="tally">
+      <div class="grp">
+        <div class="lbl"><span class="pill T">Treatment</span><span id="cntT">0</span></div>
+        <div class="bar" id="barT"><div></div></div>
+      </div>
+      <div class="grp">
+        <div class="lbl"><span class="pill C">Control</span><span id="cntC">0</span></div>
+        <div class="bar" id="barC"><div></div></div>
+      </div>
     </div>
-  </section>
+    <div id="chips"></div>
+    <div class="muted" id="diffLine" style="margin-top:6px"></div>
 
+    <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Event log</summary>
+      <ul id="log"></ul>
+    </details>
+  </section>
 </div>
 
-<section class="panel">
-  <div class="panel-title">4 · What the schedule delivered</div>
-  <div class="metrics" id="metrics"></div>
-  <div id="chart"></div>
-  <div class="legend">
-    <span><i class="swatch" style="background:var(--arm-a)"></i>Arm A</span>
-    <span><i class="swatch" style="background:var(--arm-b)"></i>Arm B</span>
-    <span><i class="swatch" style="background:var(--stamp)"></i>Positions a clinician could predict with certainty</span>
+<section class="card">
+  <h2><span class="stepnum">4</span> Watch the balance drift &mdash; running difference (Treatment &minus; Control)</h2>
+  <p class="muted" style="margin-top:0">The line wanders around zero. Simple randomisation can drift far from balance in small trials; blocked randomisation snaps back to zero at the end of every block.</p>
+  <canvas id="diffChart" width="900" height="230"></canvas>
+</section>
+
+<section class="card">
+  <h2><span class="stepnum">5</span> &ldquo;But how often does it actually balance?&rdquo; &mdash; repeat the trial 2,000 times</h2>
+  <p class="muted" style="margin-top:0">One randomisation is just one possible outcome. This panel re-runs your exact design 2,000 times and shows the distribution of the final imbalance (Treatment &minus; Control).</p>
+  <button class="primary" id="btnMC">Run 2,000 virtual trials</button>
+  <div class="stats" id="mcStats"></div>
+  <canvas id="histChart" width="900" height="240" style="margin-top:12px"></canvas>
+</section>
+
+<section class="card">
+  <h2>Teaching notes &amp; discussion questions</h2>
+  <div class="notes">
+    <h3>Why randomise at all?</h3>
+    <ul>
+      <li>Random allocation removes <b>selection bias</b>: the investigator cannot steer healthier or sicker patients into one arm.</li>
+      <li>It makes groups comparable <i>on average</i> &mdash; even for factors nobody measured.</li>
+      <li>It underpins the statistics: p-values assume treatment was assigned by chance.</li>
+    </ul>
+    <h3>Why not alternate (A, B, A, B&hellip;)?</h3>
+    <ul>
+      <li>Alternation balances perfectly but is 100% predictable. Allocation must be <b>unpredictable</b> and <b>concealed</b> (sealed opaque envelopes, central pharmacy, web systems).</li>
+    </ul>
+    <h3>A slice of history</h3>
+    <ul>
+      <li>1927 &mdash; Tippett publishes the first printed random-digit tables.</li>
+      <li>1938 &mdash; Fisher &amp; Yates include them in their statistical tables.</li>
+      <li>1955 &mdash; RAND prints <i>A Million Random Digits</i>, generated by an electronic roulette wheel.</li>
+      <li>Today the same logic runs in software &mdash; the principle is unchanged.</li>
+    </ul>
+    <h3>Simple vs blocked</h3>
+    <ul>
+      <li><b>Simple:</b> like coin-flipping; small trials can end lopsided (try n = 20 several times).</li>
+      <li><b>Blocked:</b> every block holds exactly half Treatment / half Control. Trade-off: with a fixed, known block size in an open-label trial, late allocations become guessable &mdash; real trials use randomly varying block sizes.</li>
+    </ul>
+    <h3>Questions for students</h3>
+    <ul>
+      <li>Run simple randomisation with n = 20 five times. How often did you get exactly 10 vs 10? Compare with the theoretical probability shown by the Monte-Carlo panel.</li>
+      <li>Why does blocked randomisation always end balanced when n is a multiple of the block size? What happens when it is not?</li>
+      <li>Block size 4, open-label trial, block so far is T, T, C. What must come next &mdash; and why is that a problem?</li>
+      <li>Which digits get skipped with block size 4, and why is skipping legitimate?</li>
+    </ul>
   </div>
 </section>
 
-<div class="prose">
-  <h2>Why the envelopes mattered</h2>
-  <p>Randomisation only protects a trial if the next allocation is <strong>unknowable</strong> at the moment a clinician decides whether to enrol someone. The list itself is random; concealment is what stops that randomness being undone at the bedside.</p>
-  <p>Permuted blocks keep the arms balanced throughout recruitment, which matters if the trial stops early or if patient mix drifts over time. The cost is predictability: within a block of fixed size, once enough allocations are known, the remainder is forced. With a block of 4 and two A's already opened, the last two lines <em>must</em> be B. Set the method to fixed blocks of 2 above and the predictable-positions metric climbs to half the list.</p>
-  <p>Random block sizes buy that predictability back down, which is why the block size — not just the seed — was kept off the site's copy of the protocol. Stratification runs a separate list per stratum so balance holds within each site, at the price of some imbalance overall, especially when strata are many and recruitment per stratum is small.</p>
-  <h2>Reading the table</h2>
-  <p>Each line is one sealed envelope. Allocation numbers are prefixed by stratum, as they were on paper, so a site could never take a line belonging to another site. Rows stay masked until opened — the unblinded view is what the statistician and pharmacy saw, and what the investigator never did.</p>
-</div>
 
-<footer>Simulation for teaching. Allocations are generated in your browser from the seed you set; nothing is transmitted.</footer>
-</div>
+</main>
 
 <script>
-/* ---------- reproducible RNG ---------- */
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function shuffle(arr,rnd){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+"use strict";
+window.addEventListener("error", function(e){
+  var b = document.getElementById("errBanner");
+  b.style.display = "block";
+  b.textContent = "JavaScript error: " + e.message + " (line " + e.lineno + "). Please re-save the file with the complete code.";
+});
 
-/* ---------- state ---------- */
-let schedule=[];      // all lines, across strata
-let strataNames=[];
-let unblinded=false;
-let enrolCount=0;
+function $(id){ return document.getElementById(id); }
 
-const $=id=>document.getElementById(id);
+var COLS = 10;
+var ROWS = 0;
+var grid = [];
+var cellEls = [];
+var cfg = { n:20, method:"simple", rule:"lowhigh", blockSize:4, direction:"across" };
+var pos = {r:0, c:0};
+var startPos = null;
+var started = false;
+var consumed = {};
+var assignments = [];
+var blockPerm = null, blockPtr = 0, blocksUsed = 0;
+var playTimer = null;
 
-function ratioParts(){const [a,b]=$('ratio').value.split(':').map(Number);return {a,b,unit:a+b}}
+var COL_LINE = "#b9ad8d", COL_AXIS = "#7d7360", COL_TRACE = "#262218", COL_PICK = "#2e4057";
+var COL_TREAT = "#2e6b4f", COL_CTRL = "#a4700f";
 
-function buildSchedule(){
-  const method=$('method').value;
-  const nStrata=+$('strata').value;
-  const per=+$('perStratum').value;
-  const seed=+$('seed').value||1;
-  const {a:ra,b:rb,unit}=ratioParts();
-  const rnd=mulberry32(seed);
+function rndDigit(){ return Math.floor(Math.random()*10); }
+function key(r,c){ return r + "," + c; }
 
-  strataNames = nStrata===1 ? ['—'] : Array.from({length:nStrata},(_,i)=>'Site '+String.fromCharCode(65+i));
-  schedule=[];
+function uniquePerms(s){
+  var res = [];
+  function rec(pre, rest){
+    if(rest === ""){ res.push(pre); return; }
+    var seen = {};
+    for(var i=0;i<rest.length;i++){
+      if(seen[rest[i]]) continue;
+      seen[rest[i]] = true;
+      rec(pre + rest[i], rest.slice(0,i) + rest.slice(i+1));
+    }
+  }
+  rec("", s);
+  return res.sort();
+}
+var PERMS4 = uniquePerms("TTCC");
+var PERMS6 = uniquePerms("TTTCCC");
 
-  strataNames.forEach((sName,si)=>{
-    const prefix=nStrata===1?1:si+1;
-    let seq=[];           // {treat, blockId, pos, blockSize}
-    let blockId=0;
+function ruleText(){
+  if(cfg.rule === "lowhigh"){
+    return "Rule in force: digits 0&ndash;4 &rarr; <b class='pill C'>Control</b>, digits 5&ndash;9 &rarr; <b class='pill T'>Treatment</b>.";
+  }
+  return "Rule in force: odd digits &rarr; <b class='pill T'>Treatment</b>, even digits (incl. 0) &rarr; <b class='pill C'>Control</b>.";
+}
+function classifySimple(d){
+  if(cfg.rule === "lowhigh") return (d <= 4) ? "C" : "T";
+  return (d % 2 === 1) ? "T" : "C";
+}
+function whySimple(d, label){
+  if(cfg.rule === "lowhigh") return (label === "C") ? (d + " falls in 0&ndash;4") : (d + " falls in 5&ndash;9");
+  return (label === "T") ? (d + " is odd") : (d + " is even");
+}
 
-    if(method==='simple'){
-      for(let i=0;i<per;i++){
-        seq.push({treat: rnd()<ra/unit?'A':'B', blockId:null, pos:null, blockSize:null});
+function ensureRows(minRows){
+  while(ROWS < minRows){
+    var row = [];
+    for(var c=0;c<COLS;c++) row.push(rndDigit());
+    grid.push(row);
+    ROWS++;
+  }
+}
+function generateTable(){
+  grid = []; ROWS = 0; consumed = {}; cellEls = [];
+  var perPatient = (cfg.method === "simple") ? 1.15 : (cfg.blockSize === 4 ? 0.7 : 1.9);
+  var rowsNeeded = Math.max(10, Math.ceil(cfg.n * perPatient / COLS) + 3);
+  ensureRows(Math.min(rowsNeeded, 45));
+  renderGrid();
+  started = false; startPos = null;
+  resetRun();
+  narrate("New table of " + ROWS + "&times;10 random digits generated. " + ruleText() + " Now choose where to start reading.");
+}
+function renderGrid(){
+  var g = $("grid");
+  g.innerHTML = "";
+  cellEls = [];
+  for(var r=0;r<ROWS;r++){
+    var rowEls = [];
+    for(var c=0;c<COLS;c++){
+      var d = document.createElement("div");
+      d.className = "cell";
+      d.textContent = grid[r][c];
+      d.title = "row " + (r+1) + ", column " + (c+1);
+      (function(rr,cc){
+        d.addEventListener("click", function(){ placeStart(rr,cc); });
+      })(r,c);
+      g.appendChild(d);
+      rowEls.push(d);
+    }
+    cellEls.push(rowEls);
+  }
+  paintAll();
+}
+function paintCell(r,c){
+  if(!cellEls[r] || !cellEls[r][c]) return;
+  var el = cellEls[r][c];
+  var cls = "cell";
+  if(consumed[key(r,c)]) cls += " " + consumed[key(r,c)];
+  if(startPos && startPos.r === r && startPos.c === c) cls += " start";
+  if(started && pos.r === r && pos.c === c) cls += " cursor";
+  el.className = cls;
+}
+function paintAll(){
+  for(var r=0;r<ROWS;r++)
+    for(var c=0;c<COLS;c++)
+      paintCell(r,c);
+}
+function markCell(cell, cls){
+  consumed[key(cell.r, cell.c)] = cls;
+  paintCell(cell.r, cell.c);
+}
+
+function placeStart(r,c){
+  startPos = {r:r, c:c};
+  started = true;
+  resetRun();
+  narrate("Pencil lands on row " + (r+1) + ", column " + (c+1) + " &mdash; digit <b>" + grid[r][c] + "</b>. This is patient #1&rsquo;s digit. " + ruleText());
+  paintAll();
+}
+function advance(){
+  if(cfg.direction === "across"){
+    pos.c++;
+    if(pos.c === COLS){ pos.c = 0; pos.r++; }
+  } else {
+    pos.r++;
+  }
+  if(pos.r >= ROWS){
+    ensureRows(ROWS + 5);
+    renderGrid();
+  }
+}
+function readCell(){
+  var cell = { r: pos.r, c: pos.c, d: grid[pos.r][pos.c] };
+  advance();
+  paintCell(cell.r, cell.c);
+  return cell;
+}
+
+function pickPermutation(){
+  var skipped = [];
+  if(cfg.blockSize === 4){
+    for(;;){
+      var cell = readCell();
+      if(cell.d >= 1 && cell.d <= 6){
+        markCell(cell, "pick");
+        blocksUsed++;
+        var perm = PERMS4[cell.d - 1];
+        var skipTxt = skipped.length ? ("skipped " + skipped.join(", ") + " (not 1&ndash;6); ") : "";
+        return { perm: perm, text: "<b>Block " + blocksUsed + "</b> starts: " + skipTxt +
+                 "drew digit <b>" + cell.d + "</b> &rarr; permutation <b>" + perm + "</b> (1 = " + PERMS4[0] + " &hellip; 6 = " + PERMS4[5] + ")." };
       }
-    }else{
-      const fixed=+$('blockSize').value;
-      // valid block sizes must be multiples of the ratio unit
-      const pool=[2,4,6,8].filter(b=>b%unit===0);
-      while(seq.length<per){
-        let bs = method==='fixed'
-          ? (fixed%unit===0?fixed:pool[pool.length-1])
-          : pool[Math.floor(rnd()*pool.length)];
-        blockId++;
-        const block=[];
-        const nA=bs*ra/unit, nB=bs-nA;
-        for(let i=0;i<nA;i++)block.push('A');
-        for(let i=0;i<nB;i++)block.push('B');
-        shuffle(block,rnd);
-        block.forEach((t,i)=>{
-          if(seq.length<per) seq.push({treat:t,blockId,pos:i+1,blockSize:bs});
-        });
+      markCell(cell, "skip");
+      skipped.push(cell.d);
+    }
+  } else {
+    for(;;){
+      var a = readCell(), b = readCell();
+      var num = a.d * 10 + b.d;
+      if(num >= 1 && num <= 20){
+        markCell(a, "pick");
+        markCell(b, "pick");
+        blocksUsed++;
+        var perm6 = PERMS6[num - 1];
+        var skipTxt6 = skipped.length ? ("skipped " + skipped.join("; ") + "; ") : "";
+        return { perm: perm6, text: "<b>Block " + blocksUsed + "</b> starts: " + skipTxt6 +
+                 "drew digits <b>" + a.d + "" + b.d + "</b> = " + num + " &rarr; permutation <b>" + perm6 + "</b> (numbered 01&ndash;20 in alphabetical order)." };
+      }
+      markCell(a, "skip");
+      markCell(b, "skip");
+      skipped.push("" + a.d + "" + b.d + " (outside 01&ndash;20)");
+    }
+  }
+}
+
+function step(){
+  readCfg();
+  if(assignments.length >= cfg.n){ stopPlay(); return false; }
+  if(!started){
+    narrate("First place your pencil: click a cell in the table, or press <b>Drop the pencil</b>.");
+    return false;
+  }
+  var narr = [];
+  var label;
+  if(cfg.method === "simple"){
+    var cell = readCell();
+    label = classifySimple(cell.d);
+    markCell(cell, (label === "T") ? "u-T" : "u-C");
+    narr.push("Digit <b>" + cell.d + "</b> read at row " + (cell.r+1) + ", col " + (cell.c+1) + " &mdash; " + whySimple(cell.d, label) +
+              " &rarr; <b>" + ((label === "T") ? "TREATMENT" : "CONTROL") + "</b>.");
+    pushPatient(label, "digit " + cell.d + " (" + whySimple(cell.d, label) + ")");
+  } else {
+    if(!blockPerm || blockPtr >= cfg.blockSize){
+      var res = pickPermutation();
+      blockPerm = res.perm;
+      blockPtr = 0;
+      narr.push(res.text);
+    }
+    label = blockPerm.charAt(blockPtr);
+    blockPtr++;
+    pushPatient(label, "block " + blocksUsed + ", permutation <b>" + blockPerm + "</b>, position " + blockPtr);
+    narr.push("Patient " + assignments.length + " takes position " + blockPtr + " of the block &rarr; <b>" +
+              ((label === "T") ? "TREATMENT" : "CONTROL") + "</b>.");
+  }
+  narrate(narr.join("<br>"));
+  updateUI();
+  if(assignments.length >= cfg.n) finish();
+  return true;
+}
+
+function pushPatient(label, srcHTML){
+  assignments.push(label);
+  var i = assignments.length;
+  $("pNum").textContent = "Patient #" + i;
+  $("pSrc").innerHTML = "Allocated from " + srcHTML;
+  var b = $("pBadge");
+  b.textContent = label;
+  b.className = "badge " + label;
+  var chip = document.createElement("div");
+  chip.className = "chip " + label;
+  chip.textContent = label;
+  chip.title = "Patient " + i;
+  $("chips").appendChild(chip);
+  var li = document.createElement("li");
+  li.innerHTML = "#" + i + " &rarr; <b style='color:" + ((label === "T") ? COL_TREAT : COL_CTRL) + "'>" +
+                 ((label === "T") ? "Treatment" : "Control") + "</b> (" + srcHTML + ")";
+  $("log").insertBefore(li, $("log").firstChild);
+  while($("log").children.length > 80) $("log").removeChild($("log").lastChild);
+}
+
+function finish(){
+  stopPlay();
+  var t = 0, i;
+  for(i=0;i<assignments.length;i++) if(assignments[i] === "T") t++;
+  var c = assignments.length - t;
+  var extra = "";
+  if(cfg.method === "simple" && Math.abs(t-c) >= 4){
+    extra = " Notice the imbalance. Try the same sample size with <b>blocked</b> randomisation and compare.";
+  } else {
+    extra = " Look at the running-difference chart below to see how the allocation evolved.";
+  }
+  narrate("Allocation complete. All " + cfg.n + " patients assigned: <b class='pill T'>Treatment " + t + "</b> vs <b class='pill C'>Control " + c +
+          "</b> (difference " + Math.abs(t-c) + ")." + extra);
+}
+
+function narrate(html){ $("narration").innerHTML = html; }
+function updateUI(){
+  var t = 0, i;
+  for(i=0;i<assignments.length;i++) if(assignments[i] === "T") t++;
+  var c = assignments.length - t;
+  var m = Math.max(t, c, 1);
+  $("cntT").textContent = t;
+  $("cntC").textContent = c;
+  $("barT").firstElementChild.style.width = (t/m*100) + "%";
+  $("barC").firstElementChild.style.width = (c/m*100) + "%";
+  var d = t - c;
+  $("diffLine").innerHTML = "Current imbalance: <b>" + ((d>0)?"+":"") + d + "</b> in favour of " + ((t>=c)?"Treatment":"Control") +
+                            " &middot; " + assignments.length + "/" + cfg.n + " enrolled";
+  drawDiffChart();
+}
+
+function drawDiffChart(){
+  var cv = $("diffChart"), ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  var padL = 40, padR = 14, padT = 14, padB = 28;
+  var s = [0], d = 0, i;
+  for(i=0;i<assignments.length;i++){ d += (assignments[i] === "T") ? 1 : -1; s.push(d); }
+  var maxY = 3;
+  for(i=0;i<s.length;i++) if(Math.abs(s[i]) > maxY) maxY = Math.abs(s[i]);
+  function X(k){ return padL + (assignments.length ? k/assignments.length : 0) * (W-padL-padR); }
+  function Y(v){ return padT + (1 - (v+maxY)/(2*maxY)) * (H-padT-padB); }
+  ctx.font = "13px Georgia, serif";
+  ctx.fillStyle = COL_AXIS;
+  ctx.textAlign = "right";
+  ctx.fillText(maxY, padL-8, Y(maxY)+4);
+  ctx.fillText(0, padL-8, Y(0)+4);
+  ctx.fillText(-maxY, padL-8, Y(-maxY)+4);
+  ctx.setLineDash([5,4]);
+  ctx.strokeStyle = COL_LINE;
+  ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(W-padR, Y(0)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.textAlign = "center";
+  ctx.fillText("perfect balance", padL+58, Y(0)-6);
+  ctx.fillText("patient number", W/2, H-6);
+  ctx.strokeStyle = COL_TRACE;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for(i=0;i<s.length;i++){
+    if(i === 0) ctx.moveTo(X(i), Y(s[i]));
+    else ctx.lineTo(X(i), Y(s[i]));
+  }
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  if(s.length > 1){
+    var last = s[s.length-1];
+    ctx.fillStyle = (last > 0) ? COL_TREAT : (last < 0) ? COL_CTRL : COL_PICK;
+    ctx.beginPath();
+    ctx.arc(X(s.length-1), Y(last), 5, 0, 6.2832);
+    ctx.fill();
+  }
+}
+
+function lnFact(n){ var s = 0; for(var i=2;i<=n;i++) s += Math.log(i); return s; }
+
+function runMonteCarlo(){
+  readCfg();
+  var N = cfg.n, reps = 2000, diffs = [], r, i;
+  var perms = (cfg.blockSize === 4) ? PERMS4 : PERMS6;
+  for(r=0;r<reps;r++){
+    var t = 0;
+    if(cfg.method === "simple"){
+      for(i=0;i<N;i++) if(Math.random() < 0.5) t++;
+    } else {
+      var bs = cfg.blockSize;
+      var full = Math.floor(N/bs), rem = N % bs;
+      t = full * bs / 2;
+      if(rem > 0){
+        var p = perms[Math.floor(Math.random()*perms.length)];
+        for(i=0;i<rem;i++) if(p.charAt(i) === "T") t++;
       }
     }
-
-    seq.forEach((s,i)=>{
-      schedule.push({
-        id: schedule.length,
-        allocNo: (nStrata===1?'':prefix)+String(101+i),
-        stratum: sName, stratumIdx: si,
-        treat: s.treat, blockId: s.blockId, pos: s.pos, blockSize: s.blockSize,
-        used:false, order:null
-      });
-    });
-  });
-
-  enrolCount=0;
-  const nOpts=$('site');
-  nOpts.innerHTML=strataNames.map((s,i)=>`<option value="${i}">${s==='—'?'Single list':s}</option>`).join('');
-  const m=$('method').value;
-  $('bsWrap').style.opacity = m==='fixed'?1:.4;
-  $('blockSize').disabled = m!=='fixed';
-  $('genNote').textContent =
-    `${schedule.length} lines prepared across ${strataNames.length} list${strataNames.length>1?'s':''}` +
-    (m==='simple'?' — no blocking, so balance is left to chance.'
-     : m==='fixed'?` — fixed blocks of ${$('blockSize').value}.`
-     : ' — block sizes drawn at random from 2, 4, 6, 8.');
-  render();
-}
-
-/* ---------- enrolment ---------- */
-function nextLine(si){ return schedule.find(r=>r.stratumIdx===si && !r.used) }
-
-function enrol(){
-  const si=+$('site').value;
-  const line=nextLine(si);
-  if(!line){ $('reveal').innerHTML='<span class="stamp">EXHAUSTED</span> No sealed envelopes remain for this stratum.'; return }
-  line.used=true; line.order=++enrolCount; line.justOpened=true;
-  $('reveal').innerHTML =
-    `Envelope <b>${line.allocNo}</b> opened for participant ${line.order}` +
-    `<span class="big arm${line.treat}" style="color:var(--arm-${line.treat.toLowerCase()})">Allocated to Arm ${line.treat}</span>`;
-  render();
-  setTimeout(()=>{line.justOpened=false},400);
-}
-
-function fillAll(){
-  let guard=0;
-  while(schedule.some(r=>!r.used) && guard++<500){
-    const open=strataNames.map((_,i)=>i).filter(i=>nextLine(i));
-    const si=open[Math.floor(Math.random()*open.length)];
-    const line=nextLine(si);
-    line.used=true; line.order=++enrolCount;
+    diffs.push(2*t - N);
   }
-  $('reveal').innerHTML=`All ${enrolCount} envelopes opened. The lists are exhausted.`;
-  render();
+  var binStep = (N <= 40) ? 1 : 2;
+  var bins = {}, keys = [];
+  for(i=0;i<diffs.length;i++){
+    var b = Math.round(diffs[i]/binStep)*binStep;
+    if(bins[b] === undefined){ bins[b] = 0; keys.push(b); }
+    bins[b]++;
+  }
+  keys.sort(function(a,b){ return a-b; });
+  var maxC = 1;
+  for(i=0;i<keys.length;i++) if(bins[keys[i]] > maxC) maxC = bins[keys[i]];
+  var cv = $("histChart"), ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  var padL = 16, padR = 16, padB = 30, padT = 16;
+  var bw = (W-padL-padR)/keys.length;
+  for(i=0;i<keys.length;i++){
+    var h = bins[keys[i]]/maxC * (H-padT-padB);
+    ctx.fillStyle = (keys[i] > 0) ? COL_TREAT : (keys[i] < 0) ? COL_CTRL : COL_PICK;
+    ctx.fillRect(padL + i*bw + 1, H - padB - h, Math.max(bw-2,1), h);
+  }
+  ctx.fillStyle = COL_AXIS;
+  ctx.font = "13px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText("more Control", padL+60, H-8);
+  ctx.fillText("final imbalance (Treatment - Control)", W/2, H-8);
+  ctx.fillText("more Treatment", W-padR-60, H-8);
+  var balanced = 0, absSum = 0;
+  for(i=0;i<diffs.length;i++){ if(diffs[i] === 0) balanced++; absSum += Math.abs(diffs[i]); }
+  var html = "<span>Trials run: <b>" + reps + "</b></span>" +
+             "<span>Mean |imbalance|: <b>" + (absSum/reps).toFixed(2) + "</b></span>" +
+             "<span>Perfectly balanced: <b>" + (balanced/reps*100).toFixed(1) + " %</b></span>";
+  if(cfg.method === "simple" && N % 2 === 0){
+    var pExact = Math.exp(lnFact(N) - 2*lnFact(N/2) - N*Math.LN2);
+    html += "<span class='muted'>Theory: an exact " + (N/2) + "-vs-" + (N/2) + " split happens only <b>" + (pExact*100).toFixed(1) + " %</b> of the time &mdash; random does not mean equal.</span>";
+  }
+  if(cfg.method === "blocked" && N % cfg.blockSize === 0){
+    html += "<span class='muted'>Because " + N + " is a multiple of block size " + cfg.blockSize + ", every single trial ends perfectly balanced.</span>";
+  }
+  $("mcStats").innerHTML = html;
 }
 
-/* ---------- predictability ---------- */
-function predictable(){
-  // Within a block of KNOWN fixed size, a position is forced when every
-  // remaining line in that block must be the same treatment.
-  if($('method').value!=='fixed') return {n:0,total:schedule.length,ids:new Set()};
-  const ids=new Set();
-  const byBlock={};
-  schedule.forEach(r=>{ const k=r.stratum+'|'+r.blockId; (byBlock[k]=byBlock[k]||[]).push(r) });
-  Object.values(byBlock).forEach(rows=>{
-    rows.sort((x,y)=>x.pos-y.pos);
-    const bs=rows[0].blockSize;
-    const {a:ra,b:rb,unit}=ratioParts();
-    let remA=bs*ra/unit, remB=bs-remA;
-    rows.forEach(r=>{
-      if(remA===0||remB===0) ids.add(r.id);   // forced before it is opened
-      if(r.treat==='A')remA--; else remB--;
-    });
-  });
-  return {n:ids.size,total:schedule.length,ids};
+function resetRun(){
+  stopPlay();
+  assignments = []; consumed = {}; blockPerm = null; blockPtr = 0; blocksUsed = 0;
+  if(startPos) pos = { r: startPos.r, c: startPos.c };
+  else started = false;
+  $("chips").innerHTML = "";
+  $("log").innerHTML = "";
+  $("pNum").textContent = "No patient yet";
+  $("pSrc").textContent = "The next patient\u2019s allocation will appear here.";
+  var b = $("pBadge");
+  b.textContent = "?"; b.className = "badge";
+  $("diffLine").textContent = "";
+  $("mcStats").innerHTML = "";
+  $("histChart").getContext("2d").clearRect(0,0,900,240);
+  if(grid.length) paintAll();
+  drawDiffChart();
+  if(started){
+    narrate("Run reset &mdash; pointer back to row " + (startPos.r+1) + ", column " + (startPos.c+1) + ". " + ruleText());
+  } else {
+    narrate("Choose a starting cell (or drop the pencil), then press <b>Next patient</b>.");
+  }
+}
+function stopPlay(){
+  if(playTimer){ clearInterval(playTimer); playTimer = null; }
+  $("btnPlay").textContent = "Play";
+}
+function togglePlay(){
+  if(playTimer){ stopPlay(); return; }
+  if(assignments.length >= cfg.n) resetRun();
+  if(!started){ narrate("First place your pencil: click a cell, or press <b>Drop the pencil</b>."); return; }
+  $("btnPlay").textContent = "Pause";
+  var delay = 980 - parseInt($("speed").value, 10);
+  playTimer = setInterval(function(){ if(!step()) stopPlay(); }, delay);
 }
 
-/* ---------- render ---------- */
-function render(){
-  // rack
-  const si=+($('site').value||0);
-  const rows=schedule.filter(r=>r.stratumIdx===si);
-  const nextId=(nextLine(si)||{}).id;
-  $('rack').innerHTML=rows.slice(0,28).map(r=>{
-    const cls='env'+(r.used?' open':'')+(r.id===nextId?' next':'')+(r.justOpened?' justopened':'');
-    const inner=r.used
-      ? `<span class="arm arm${r.treat}" style="color:var(--arm-${r.treat.toLowerCase()})">${r.allocNo} · ${r.treat}</span>`
-      : r.allocNo;
-    return `<div class="${cls}" title="${r.used?'Opened':'Sealed'}">${inner}</div>`;
-  }).join('');
-
-  // table
-  const pred=predictable();
-  const tb=document.querySelector('#tbl tbody');
-  tb.innerHTML=schedule.map(r=>{
-    const show=unblinded||r.used;
-    const treat=show
-      ? `<span class="arm${r.treat}">${r.treat}</span>`
-      : '<span class="masked">▓▓▓</span>';
-    const status=r.used
-      ? `<span class="stamp">OPENED ${String(r.order).padStart(2,'0')}</span>`
-      : 'sealed';
-    const isStart=r.pos===1;
-    return `<tr class="${r.used?'used':''} ${isStart?'blockstart':''}">
-      <td>${r.allocNo}</td><td>${r.stratum}</td>
-      <td>${r.blockId??'—'}${r.blockSize?` <span class="masked">(${r.blockSize})</span>`:''}</td>
-      <td>${r.pos??'—'}</td><td>${treat}</td><td>${status}</td></tr>`;
-  }).join('');
-  $('viewState').textContent = unblinded?'unblinded view — statistician & pharmacy only':'concealed — investigator view';
-  $('unblind').textContent = unblinded?'Hide the unopened lines':'Show the full list (unblinded view)';
-
-  // metrics
-  const used=schedule.filter(r=>r.used);
-  const nA=used.filter(r=>r.treat==='A').length;
-  const nB=used.length-nA;
-  const imb=Math.abs(nA-nB);
-  let maxImb=0,run=0;
-  used.slice().sort((x,y)=>x.order-y.order).forEach(r=>{run+=r.treat==='A'?1:-1;maxImb=Math.max(maxImb,Math.abs(run))});
-  const pct = pred.total? Math.round(100*pred.n/pred.total):0;
-  $('metrics').innerHTML=`
-    <div class="metric"><div class="k">Enrolled</div><div class="v">${used.length}<span style="font-size:15px;color:var(--ink-soft)"> / ${schedule.length}</span></div></div>
-    <div class="metric"><div class="k">Arm A</div><div class="v" style="color:var(--arm-a)">${nA}</div></div>
-    <div class="metric"><div class="k">Arm B</div><div class="v" style="color:var(--arm-b)">${nB}</div></div>
-    <div class="metric ${imb>3?'warn':''}"><div class="k">Final imbalance</div><div class="v">${imb}</div></div>
-    <div class="metric ${maxImb>4?'warn':''}"><div class="k">Worst imbalance during recruitment</div><div class="v">${maxImb}</div></div>
-    <div class="metric ${pct>20?'warn':''}"><div class="k">Predictable positions</div><div class="v">${pct}%</div></div>`;
-
-  drawChart(used,pred.ids);
+function readCfg(){
+  cfg.n = Math.max(4, Math.min(120, parseInt($("nPatients").value, 10) || 20));
+  cfg.method = $("method").value;
+  cfg.rule = $("rule").value;
+  cfg.blockSize = parseInt($("blockSize").value, 10);
+  cfg.direction = $("direction").value;
+  $("ruleWrap").className = "ctrl" + ((cfg.method === "simple") ? "" : " hidden");
+  $("blockWrap").className = "ctrl" + ((cfg.method === "blocked") ? "" : " hidden");
+  if(cfg.method === "simple"){
+    $("ruleLegend").innerHTML = ruleText();
+  } else {
+    var b = cfg.blockSize;
+    $("ruleLegend").innerHTML = "Blocked rule: at the start of every block of " + b + ", read " +
+      ((b === 4) ? "one digit (1&ndash;6; skip 0 and 7&ndash;9)" : "two digits (01&ndash;20; skip the rest)") +
+      " to pick one of the " + ((b === 4) ? 6 : 20) + " possible permutations of " +
+      ((b === 4) ? "TTCC" : "TTTCCC") + " &mdash; each block contains exactly " + (b/2) + " Treatment and " + (b/2) + " Control.";
+  }
 }
 
-function drawChart(used,predIds){
-  const W=980,H=210,pad={l:44,r:16,t:16,b:28};
-  const seq=used.slice().sort((x,y)=>x.order-y.order);
-  const n=Math.max(seq.length,1);
-  let run=0;const pts=[[0,0]];
-  seq.forEach((r,i)=>{run+=r.treat==='A'?1:-1;pts.push([i+1,run])});
-  const maxY=Math.max(4,...pts.map(p=>Math.abs(p[1])));
-  const x=i=>pad.l+(i/n)*(W-pad.l-pad.r);
-  const y=v=>pad.t+((maxY-v)/(2*maxY))*(H-pad.t-pad.b);
-  const path=pts.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ');
-  const ticks=[maxY,Math.round(maxY/2),0,-Math.round(maxY/2),-maxY];
-  const marks=seq.map((r,i)=>predIds.has(r.id)
-    ? `<rect x="${x(i+1)-1}" y="${pad.t}" width="2" height="${H-pad.t-pad.b}" fill="var(--stamp)" opacity=".18"/>`:'').join('');
-  $('chart').innerHTML=`
-  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative difference between arms across enrolment order">
-    ${marks}
-    ${ticks.map(t=>`<g><line x1="${pad.l}" x2="${W-pad.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--rule-soft)" stroke-width="1"/>
-      <text x="${pad.l-8}" y="${y(t)+4}" text-anchor="end" font-family="Courier Prime,monospace" font-size="11" fill="var(--ink-soft)">${t>0?'+'+t:t}</text></g>`).join('')}
-    <line x1="${pad.l}" x2="${W-pad.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink)" stroke-width="1.2"/>
-    <path d="${path}" fill="none" stroke="var(--arm-a)" stroke-width="2.2" stroke-linejoin="round"/>
-    <text x="${pad.l}" y="${H-8}" font-family="Courier Prime,monospace" font-size="11" fill="var(--ink-soft)">Enrolment order →  cumulative (A − B)</text>
-  </svg>`;
-}
-
-/* ---------- wiring ---------- */
-$('gen').addEventListener('click',buildSchedule);
-$('enrol').addEventListener('click',enrol);
-$('fill').addEventListener('click',fillAll);
-$('site').addEventListener('change',render);
-$('unblind').addEventListener('click',()=>{unblinded=!unblinded;render()});
-$('method').addEventListener('change',()=>{
-  const m=$('method').value;
-  $('bsWrap').style.opacity=m==='fixed'?1:.4;
-  $('blockSize').disabled=m!=='fixed';
+$("btnGenerate").addEventListener("click", function(){ readCfg(); generateTable(); });
+$("btnPencil").addEventListener("click", function(){
+  if(!grid.length) return;
+  var r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
+  placeStart(r, c);
+  narrate("Eyes closed &hellip; the pencil lands on row " + (r+1) + ", column " + (c+1) + " &mdash; digit <b>" + grid[r][c] +
+          "</b>. " + ruleText() + " Press <b>Next patient</b>.");
 });
-buildSchedule();
+$("btnStep").addEventListener("click", function(){ stopPlay(); step(); });
+$("btnPlay").addEventListener("click", togglePlay);
+$("btnRunAll").addEventListener("click", function(){
+  stopPlay();
+  var guard = 0;
+  while(assignments.length < cfg.n && guard++ < 2000) step();
+});
+$("btnReset").addEventListener("click", function(){ resetRun(); });
+$("btnMC").addEventListener("click", runMonteCarlo);
+
+var settingIds = ["method","rule","blockSize","direction","nPatients"];
+for(var si=0; si<settingIds.length; si++){
+  $(settingIds[si]).addEventListener("change", function(){
+    readCfg();
+    if(grid.length){ resetRun(); }
+  });
+}
+
+readCfg();
+generateTable();
+drawDiffChart();
 </script>
 </body>
 </html>
