@@ -83,6 +83,18 @@
   footer{text-align:center;color:var(--muted);font-style:italic;font-size:.8rem;padding:10px}
   #errBanner{display:none;position:fixed;top:0;left:0;right:0;background:var(--accent);color:#f9f5e8;padding:10px 16px;font-family:var(--mono);font-size:13px;z-index:99}
   details summary{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+  #permPanel{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  #permPanel .ptitle{font-family:var(--mono);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  #permList{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:4px}
+  .perm{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;padding:4px 7px;font-family:var(--mono);font-size:.78rem;transition:background .2s,border-color .2s}
+  .perm .pn{color:var(--muted);font-weight:700}
+  .perm .pv{letter-spacing:.06em}
+  .perm .uc{margin-left:auto;font-size:.65rem;font-weight:700;color:var(--pick)}
+  .perm.used{box-shadow:inset 0 0 0 1px var(--pick)}
+  .perm.selected{background:var(--pick);border-color:var(--pick);color:#f9f5e8}
+  .perm.selected .pn{color:#c8d3e2}
+  .perm.selected .uc{color:#f9f5e8}
+  #permHint{margin:8px 0 0;font-size:.8rem}
 </style>
 </head>
 <body>
@@ -163,7 +175,7 @@
       <button class="primary" id="btnStep">Next patient</button>
       <button id="btnPlay">Play</button>
       <button id="btnRunAll">Run all</button>
-      <button class="ghost" id="btnReset">Reset run</button>
+      <button class="ghost" id="btnReset">Reset</button>
       <label class="ctrl" style="margin-left:auto">Speed
         <input type="range" id="speed" min="80" max="900" value="380">
       </label>
@@ -191,6 +203,12 @@
     </div>
     <div id="chips"></div>
     <div class="muted" id="diffLine" style="margin-top:6px"></div>
+
+    <div id="permPanel" class="hidden">
+      <div class="ptitle">Permutation lookup table <span id="permTitle"></span></div>
+      <div id="permList"></div>
+      <p class="muted" id="permHint"></p>
+    </div>
 
     <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Event log</summary>
       <ul id="log"></ul>
@@ -272,6 +290,7 @@ var consumed = {};
 var assignments = [];
 var blockPerm = null, blockPtr = 0, blocksUsed = 0;
 var playTimer = null;
+var permUse = {}, selectedPerm = -1, lastPermKey = "";
 
 var COL_LINE = "#b9ad8d", COL_AXIS = "#7d7360", COL_TRACE = "#262218", COL_PICK = "#2e4057";
 var COL_TREAT = "#2e6b4f", COL_CTRL = "#a4700f";
@@ -295,6 +314,46 @@ function uniquePerms(s){
 }
 var PERMS4 = uniquePerms("TTCC");
 var PERMS6 = uniquePerms("TTTCCC");
+
+function permNum(i){
+  if(cfg.blockSize === 4) return String(i+1);
+  return (i+1 < 10) ? ("0" + (i+1)) : String(i+1);
+}
+function renderPermTable(){
+  var panel = $("permPanel");
+  if(cfg.method !== "blocked"){ panel.className = "hidden"; return; }
+  panel.className = "";
+  var k = "b" + cfg.blockSize;
+  if(k === lastPermKey){ updatePermTable(); return; }
+  lastPermKey = k;
+  var perms = (cfg.blockSize === 4) ? PERMS4 : PERMS6;
+  $("permTitle").textContent = (cfg.blockSize === 4)
+    ? "\u2014 digit 1\u20136 picks a row (0, 7\u20139 skipped)"
+    : "\u2014 digits 01\u201320 pick a row (others skipped)";
+  var list = $("permList");
+  list.innerHTML = "";
+  for(var i=0;i<perms.length;i++){
+    var d = document.createElement("div");
+    d.className = "perm";
+    d.innerHTML = "<span class='pn'>" + permNum(i) + "</span><span class='pv'>" + perms[i] + "</span><span class='uc'></span>";
+    list.appendChild(d);
+  }
+  updatePermTable();
+}
+function updatePermTable(){
+  var list = $("permList");
+  if(!list.children.length) return;
+  for(var i=0;i<list.children.length;i++){
+    var el = list.children[i];
+    var n = permUse[i] || 0;
+    el.classList.toggle("selected", i === selectedPerm);
+    el.classList.toggle("used", n > 0 && i !== selectedPerm);
+    el.lastElementChild.textContent = (n > 1) ? ("\u00d7" + n) : (n === 1 ? "\u2713" : "");
+  }
+  if(selectedPerm < 0){
+    $("permHint").innerHTML = "At the start of each block, the digit drawn from the random table selects one row above.";
+  }
+}
 
 function ruleText(){
   if(cfg.rule === "lowhigh"){
@@ -404,6 +463,11 @@ function pickPermutation(){
         markCell(cell, "pick");
         blocksUsed++;
         var perm = PERMS4[cell.d - 1];
+        selectedPerm = cell.d - 1;
+        permUse[selectedPerm] = (permUse[selectedPerm] || 0) + 1;
+        updatePermTable();
+        $("permHint").innerHTML = "Digit <b>" + cell.d + "</b> drawn &rarr; row <b>" + cell.d +
+          "</b> selected: permutation <b>" + perm + "</b> for block " + blocksUsed + ".";
         var skipTxt = skipped.length ? ("skipped " + skipped.join(", ") + " (not 1&ndash;6); ") : "";
         return { perm: perm, text: "<b>Block " + blocksUsed + "</b> starts: " + skipTxt +
                  "drew digit <b>" + cell.d + "</b> &rarr; permutation <b>" + perm + "</b> (1 = " + PERMS4[0] + " &hellip; 6 = " + PERMS4[5] + ")." };
@@ -420,6 +484,11 @@ function pickPermutation(){
         markCell(b, "pick");
         blocksUsed++;
         var perm6 = PERMS6[num - 1];
+        selectedPerm = num - 1;
+        permUse[selectedPerm] = (permUse[selectedPerm] || 0) + 1;
+        updatePermTable();
+        $("permHint").innerHTML = "Digits <b>" + a.d + "" + b.d + "</b> drawn = " + num + " &rarr; row <b>" +
+          permNum(num - 1) + "</b> selected: permutation <b>" + perm6 + "</b> for block " + blocksUsed + ".";
         var skipTxt6 = skipped.length ? ("skipped " + skipped.join("; ") + "; ") : "";
         return { perm: perm6, text: "<b>Block " + blocksUsed + "</b> starts: " + skipTxt6 +
                  "drew digits <b>" + a.d + "" + b.d + "</b> = " + num + " &rarr; permutation <b>" + perm6 + "</b> (numbered 01&ndash;20 in alphabetical order)." };
@@ -624,6 +693,8 @@ function runMonteCarlo(){
 function resetRun(){
   stopPlay();
   assignments = []; consumed = {}; blockPerm = null; blockPtr = 0; blocksUsed = 0;
+  permUse = {}; selectedPerm = -1;
+  updatePermTable();
   if(startPos) pos = { r: startPos.r, c: startPos.c };
   else started = false;
   $("chips").innerHTML = "";
@@ -632,6 +703,10 @@ function resetRun(){
   $("pSrc").textContent = "The next patient\u2019s allocation will appear here.";
   var b = $("pBadge");
   b.textContent = "?"; b.className = "badge";
+  $("cntT").textContent = "0";
+  $("cntC").textContent = "0";
+  $("barT").firstElementChild.style.width = "0%";
+  $("barC").firstElementChild.style.width = "0%";
   $("diffLine").textContent = "";
   $("mcStats").innerHTML = "";
   $("histChart").getContext("2d").clearRect(0,0,900,240);
@@ -673,6 +748,7 @@ function readCfg(){
       " to pick one of the " + ((b === 4) ? 6 : 20) + " possible permutations of " +
       ((b === 4) ? "TTCC" : "TTTCCC") + " &mdash; each block contains exactly " + (b/2) + " Treatment and " + (b/2) + " Control.";
   }
+  renderPermTable();
 }
 
 $("btnGenerate").addEventListener("click", function(){ readCfg(); generateTable(); });
@@ -690,7 +766,12 @@ $("btnRunAll").addEventListener("click", function(){
   var guard = 0;
   while(assignments.length < cfg.n && guard++ < 2000) step();
 });
-$("btnReset").addEventListener("click", function(){ resetRun(); });
+$("btnReset").addEventListener("click", function(){
+  startPos = null;
+  started = false;
+  resetRun();
+  if(grid.length) paintAll();
+});
 $("btnMC").addEventListener("click", runMonteCarlo);
 
 var settingIds = ["method","rule","blockSize","direction","nPatients"];
