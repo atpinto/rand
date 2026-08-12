@@ -35,6 +35,10 @@
   .muted{color:var(--muted);font-size:.88rem}
   .workspace{display:grid;grid-template-columns:minmax(330px,430px) 1fr;gap:18px;align-items:start}
   @media(max-width:880px){.workspace{grid-template-columns:1fr}}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .charts .card{display:flex;flex-direction:column}
+  .charts .card canvas{flex:1;min-height:0}
+  @media(max-width:880px){.charts{grid-template-columns:1fr}}
   .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:end}
   .ctrl{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
   select,input[type=number]{padding:6px 8px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;font-family:var(--mono);color:var(--ink)}
@@ -142,12 +146,6 @@
         <option value="6">6 (permutations of TTTCCC)</option>
       </select>
     </label>
-    <label class="ctrl">Reading direction
-      <select id="direction">
-        <option value="across">Across rows &rarr;</option>
-        <option value="down">Down columns &darr;</option>
-      </select>
-    </label>
     <button class="primary" id="btnGenerate">Generate new table</button>
   </div>
   <p class="muted" id="ruleLegend" style="margin-bottom:0;margin-top:10px"></p>
@@ -159,7 +157,17 @@
     <h2><span class="stepnum">2</span> The random digit table</h2>
     <p class="muted" style="margin-top:0">Each cell is one random digit (0&ndash;9).
        Click any cell to place your pencil, or leave it to chance:</p>
-    <button id="btnPencil" class="ghost">Drop the pencil (random start)</button>
+    <div class="controls" style="margin-bottom:4px">
+      <label class="ctrl">Reading direction
+        <select id="direction">
+          <option value="right" selected>Right &rarr;</option>
+          <option value="left">Left &larr;</option>
+          <option value="down">Down &darr;</option>
+          <option value="up">Up &uarr;</option>
+        </select>
+      </label>
+      <button id="btnPencil" class="ghost">Drop the pencil (random start)</button>
+    </div>
     <div id="grid"></div>
     <div class="legend">
       <span><span class="swatch" style="background:var(--treat)"></span>digit &rarr; Treatment</span>
@@ -176,9 +184,6 @@
       <button id="btnPlay">Play</button>
       <button id="btnRunAll">Run all</button>
       <button class="ghost" id="btnReset">Reset</button>
-      <label class="ctrl" style="margin-left:auto">Speed
-        <input type="range" id="speed" min="80" max="900" value="380">
-      </label>
     </div>
 
     <div id="narration" style="margin-top:12px">Welcome. First choose a starting cell (or drop the pencil), then press <b>Next patient</b>.</div>
@@ -216,6 +221,7 @@
   </section>
 </div>
 
+<div class="charts">
 <section class="card">
   <h2><span class="stepnum">4</span> Watch the balance drift &mdash; running difference (Treatment &minus; Control)</h2>
   <p class="muted" style="margin-top:0">The line wanders around zero. Simple randomisation can drift far from balance in small trials; blocked randomisation snaps back to zero at the end of every block.</p>
@@ -229,6 +235,7 @@
   <div class="stats" id="mcStats"></div>
   <canvas id="histChart" width="900" height="240" style="margin-top:12px"></canvas>
 </section>
+</div>
 
 <section class="card">
   <h2>Teaching notes &amp; discussion questions</h2>
@@ -282,7 +289,7 @@ var COLS = 10;
 var ROWS = 0;
 var grid = [];
 var cellEls = [];
-var cfg = { n:20, method:"simple", rule:"lowhigh", blockSize:4, direction:"across" };
+var cfg = { n:20, method:"simple", rule:"lowhigh", blockSize:4, direction:"right" };
 var pos = {r:0, c:0};
 var startPos = null;
 var started = false;
@@ -436,11 +443,21 @@ function placeStart(r,c){
   paintAll();
 }
 function advance(){
-  if(cfg.direction === "across"){
+  if(cfg.direction === "right"){
     pos.c++;
     if(pos.c === COLS){ pos.c = 0; pos.r++; }
-  } else {
+  } else if(cfg.direction === "left"){
+    pos.c--;
+    if(pos.c < 0){ pos.c = COLS - 1; pos.r++; }
+  } else if(cfg.direction === "down"){
     pos.r++;
+  } else { /* up: climb the column; at the top, drop to the bottom of the next column */
+    pos.r--;
+    if(pos.r < 0){
+      pos.c++;
+      if(pos.c === COLS){ ensureRows(ROWS + 5); renderGrid(); pos.c = 0; }
+      pos.r = ROWS - 1;
+    }
   }
   if(pos.r >= ROWS){
     ensureRows(ROWS + 5);
@@ -448,6 +465,8 @@ function advance(){
   }
 }
 function readCell(){
+  var guard = 0;
+  while(consumed[key(pos.r, pos.c)] && guard++ < 10000) advance();
   var cell = { r: pos.r, c: pos.c, d: grid[pos.r][pos.c] };
   advance();
   paintCell(cell.r, cell.c);
@@ -727,8 +746,7 @@ function togglePlay(){
   if(assignments.length >= cfg.n) resetRun();
   if(!started){ narrate("First place your pencil: click a cell, or press <b>Drop the pencil</b>."); return; }
   $("btnPlay").textContent = "Pause";
-  var delay = 980 - parseInt($("speed").value, 10);
-  playTimer = setInterval(function(){ if(!step()) stopPlay(); }, delay);
+  playTimer = setInterval(function(){ if(!step()) stopPlay(); }, 600);
 }
 
 function readCfg(){
