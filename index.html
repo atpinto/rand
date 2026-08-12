@@ -66,6 +66,7 @@
   .badge{margin-left:auto;font-family:var(--serif);font-size:1.5rem;font-weight:700;padding:10px 18px;border-radius:2px;color:#f9f5e8;background:#8b8371;min-width:64px;text-align:center}
   .badge.T{background:var(--treat)} .badge.C{background:var(--ctrl)}
   #narration{background:#f6efd9;border:1px solid #cbbb8f;border-left:4px solid var(--accent);border-radius:2px;padding:10px 13px;font-size:.92rem;min-height:44px}
+  #narration.alert{background:#f5e0da;border-color:#cf9a8b;border-left-color:var(--accent);color:var(--accent-dark);font-weight:700}
   .tally{display:flex;gap:14px;margin:14px 0 6px}
   .tally .grp{flex:1}
   .tally .lbl{font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between}
@@ -523,7 +524,7 @@ function step(){
   readCfg();
   if(assignments.length >= cfg.n){ stopPlay(); return false; }
   if(!started){
-    narrate("First place your pencil: click a cell in the table, or press <b>Drop the pencil</b>.");
+    narrate("First place your pencil: click a cell in the table, or press <b>Drop the pencil</b>.", true);
     return false;
   }
   var narr = [];
@@ -589,7 +590,11 @@ function finish(){
           "</b> (difference " + Math.abs(t-c) + ")." + extra);
 }
 
-function narrate(html){ $("narration").innerHTML = html; }
+function narrate(html, alert){
+  var n = $("narration");
+  n.innerHTML = html;
+  n.className = alert ? "alert" : "";
+}
 function updateUI(){
   var t = 0, i;
   for(i=0;i<assignments.length;i++) if(assignments[i] === "T") t++;
@@ -744,7 +749,7 @@ function stopPlay(){
 function togglePlay(){
   if(playTimer){ stopPlay(); return; }
   if(assignments.length >= cfg.n) resetRun();
-  if(!started){ narrate("First place your pencil: click a cell, or press <b>Drop the pencil</b>."); return; }
+  if(!started){ narrate("First place your pencil: click a cell, or press <b>Drop the pencil</b>.", true); return; }
   $("btnPlay").textContent = "Pause";
   playTimer = setInterval(function(){ if(!step()) stopPlay(); }, 600);
 }
