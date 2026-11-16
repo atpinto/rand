@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Mono:wght@500&display=swap">
+<script>try{var t=localStorage.getItem("rand-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <style>
 /* Layout: same system as the propensity / multiple-imputation / sample-size simulations —
    title + control bar on top, digit table and enrolment side by side, two chart cards beneath */
@@ -34,6 +35,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);fo
 .wrap>*{min-width:0}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
 h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.6rem,3.2vw,2.4rem);letter-spacing:-.015em;margin:0;line-height:1.05;text-wrap:balance}
+.hright{display:flex;align-items:center;gap:10px}
+.themebtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--faint);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
+.themebtn:hover{border-color:var(--muted)}
+.themebtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.themebtn .i-sun{display:none}
+.is-dark .themebtn .i-sun{display:block} .is-dark .themebtn .i-moon{display:none}
 .sub{color:var(--muted);margin:4px 0 0;font-size:1.02rem}
 .tT{color:var(--treat);font-weight:700} .tC{color:var(--ctrl);font-weight:700}
 .muted{color:var(--muted);font-size:.9rem}
@@ -134,6 +141,7 @@ footer{color:var(--muted);font-size:.85rem;text-align:center}
       <h1>Randomisation from a table of digits</h1>
       <p class="sub">Allocate patients to <b class="tT">Treatment</b> or <b class="tC">Control</b> the way it was done on paper, then see how far the groups drift apart.</p>
     </div>
+    <div class="hright">
     <span class="seg big" id="methodSeg" role="group" aria-label="Randomisation method">
       <button type="button" data-v="simple" aria-pressed="true" title="Like flipping a coin">Simple</button>
       <button type="button" data-v="blocked" aria-pressed="false" title="Keeps groups balanced">Blocked</button>
@@ -142,6 +150,11 @@ footer{color:var(--muted);font-size:.85rem;text-align:center}
       <option value="simple">Simple</option>
       <option value="blocked">Blocked</option>
     </select>
+    <button type="button" class="themebtn" id="themeBtn" aria-label="Switch to dark theme" title="Switch to dark theme">
+      <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+    </button>
+    </div>
   </header>
 
   <div class="bar">
@@ -811,8 +824,27 @@ $("methodSeg").addEventListener("click", function(e){
   $("method").value = v;
   $("method").dispatchEvent(new Event("change"));
 });
-function redrawCharts(){ readColours(); drawDiffChart(); drawHist(); }
-if(window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCharts);
+var darkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+function isDark(){
+  var t = document.documentElement.getAttribute("data-theme");
+  return t ? t === "dark" : !!(darkMQ && darkMQ.matches);
+}
+function syncThemeBtn(){
+  var d = isDark();
+  document.documentElement.classList.toggle("is-dark", d);
+  var lbl = d ? "Switch to light theme" : "Switch to dark theme";
+  $("themeBtn").setAttribute("aria-label", lbl);
+  $("themeBtn").title = lbl;
+}
+function redrawCharts(){ syncThemeBtn(); readColours(); drawDiffChart(); drawHist(); }
+$("themeBtn").addEventListener("click", function(){
+  var next = isDark() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try{ localStorage.setItem("rand-theme", next); }catch(e){}
+  redrawCharts();
+});
+syncThemeBtn();
+if(darkMQ) darkMQ.addEventListener("change", redrawCharts);
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCharts);
 
 readCfg();
