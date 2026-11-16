@@ -1,280 +1,304 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Randomisation Table Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Randomisation from a table of digits</title>
+<meta name="description" content="Enrol patients one at a time from a table of random digits, under simple or blocked randomisation, and see how far the groups drift apart.">
+<link rel="icon" href="https://atpinto.github.io/assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-  :root{
-    --bg:#ece4d0;            /* aged paper */
-    --card:#f9f5e8;
-    --ink:#262218;
-    --muted:#7d7360;
-    --accent:#9e2b1e;        /* stamp red */
-    --accent-dark:#7c1f14;
-    --treat:#2e6b4f;         /* ledger green */
-    --treat-soft:#dde9da;
-    --ctrl:#a4700f;          /* ochre */
-    --ctrl-soft:#f1e3bd;
-    --pick:#2e4057;          /* ink blue */
-    --skip:#a89f8c;
-    --line:#cfc3a2;
-    --serif:Georgia,"Palatino Linotype","Book Antiqua","Times New Roman",serif;
-    --mono:"Courier New",Courier,"Nimbus Mono PS",monospace;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:var(--serif);background:var(--bg);color:var(--ink);line-height:1.5}
-  header{background:#262218;color:#f2ead9;padding:30px 20px 24px;text-align:center;border-bottom:6px double #9e2b1e}
-  header h1{margin:0 0 8px;font-size:1.7rem;font-weight:700;letter-spacing:.04em}
-  header p{margin:0 auto;max-width:760px;font-size:.95rem;font-style:italic;color:#d8cdb2}
-  header .tag{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:#f2ead9;border:1px solid #9e2b1e;padding:3px 10px;margin-bottom:12px}
-  main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:18px 20px;margin-bottom:18px}
-  .card h2{margin:0 0 10px;font-size:1.1rem;display:flex;align-items:center;gap:10px;font-variant:small-caps;letter-spacing:.03em;border-bottom:1px solid var(--line);padding-bottom:8px}
-  .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:var(--accent);color:#f9f5e8;font-family:var(--serif);font-size:.95rem;flex:none;border-radius:2px}
-  .muted{color:var(--muted);font-size:.88rem}
-  .workspace{display:grid;grid-template-columns:minmax(330px,430px) 1fr;gap:18px;align-items:start}
-  @media(max-width:880px){.workspace{grid-template-columns:1fr}}
-  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  .charts .card{display:flex;flex-direction:column}
-  .charts .card canvas{flex:1;min-height:0}
-  @media(max-width:880px){.charts{grid-template-columns:1fr}}
-  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:end}
-  .ctrl{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-  select,input[type=number]{padding:6px 8px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;font-family:var(--mono);color:var(--ink)}
-  input[type=range]{width:150px;accent-color:var(--accent)}
-  button{font-family:var(--mono);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;border:1px solid var(--ink);border-radius:2px;padding:9px 15px;cursor:pointer;background:#fffdf4;color:var(--ink)}
-  button:hover{background:#f1e9d2}
-  button.primary{background:var(--accent);border-color:var(--accent-dark);color:#f9f5e8}
-  button.primary:hover{background:var(--accent-dark)}
-  button.ghost{background:transparent}
-  .hidden{display:none !important}
-  #grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:400px;margin-top:12px}
-  .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:15px;background:#f4efdf;border:1px solid #d8ceac;border-radius:2px;cursor:pointer;user-select:none;color:#3a3324}
-  .cell:hover{border-color:var(--accent)}
-  .cell.start{outline:3px solid var(--pick);outline-offset:-1px}
-  .cell.cursor{outline:3px dashed var(--accent);outline-offset:-1px}
-  .cell.u-T{background:var(--treat);border-color:var(--treat);color:#f9f5e8}
-  .cell.u-C{background:var(--ctrl);border-color:var(--ctrl);color:#f9f5e8}
-  .cell.pick{background:var(--pick);border-color:var(--pick);color:#f9f5e8}
-  .cell.skip{background:#eee7d3;color:var(--skip);text-decoration:line-through}
-  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-  .swatch{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
-  .patient-card{display:flex;align-items:center;gap:16px;background:#efe7cf;border:1px solid var(--line);border-radius:2px;padding:14px;margin:12px 0}
-  .patient-card .pnum{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.15em}
-  .patient-card .psrc{font-size:.92rem;color:#4a4130;max-width:300px}
-  .badge{margin-left:auto;font-family:var(--serif);font-size:1.5rem;font-weight:700;padding:10px 18px;border-radius:2px;color:#f9f5e8;background:#8b8371;min-width:64px;text-align:center}
-  .badge.T{background:var(--treat)} .badge.C{background:var(--ctrl)}
-  #narration{background:#f6efd9;border:1px solid #cbbb8f;border-left:4px solid var(--accent);border-radius:2px;padding:10px 13px;font-size:.92rem;min-height:44px}
-  #narration.alert{background:#f5e0da;border-color:#cf9a8b;border-left-color:var(--accent);color:var(--accent-dark);font-weight:700}
-  .tally{display:flex;gap:14px;margin:14px 0 6px}
-  .tally .grp{flex:1}
-  .tally .lbl{font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between}
-  .bar{height:12px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;overflow:hidden;margin-top:4px}
-  .bar div{height:100%;width:0;transition:width .25s}
-  #barT div{background:var(--treat)} #barC div{background:var(--ctrl)}
-  #chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;min-height:26px}
-  .chip{width:22px;height:22px;border-radius:2px;color:#f9f5e8;font-family:var(--mono);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .chip.T{background:var(--treat)} .chip.C{background:var(--ctrl)}
-  #log{max-height:150px;overflow:auto;font-family:var(--mono);font-size:.78rem;margin:10px 0 0;padding-left:18px;color:var(--muted)}
-  canvas{width:100%;height:auto;background:#fffdf4;border:1px solid var(--line);border-radius:2px}
-  .stats{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:10px;font-size:.9rem}
-  .pill{display:inline-block;padding:2px 9px;border-radius:2px;font-family:var(--mono);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-  .pill.T{background:var(--treat-soft);color:var(--treat)} .pill.C{background:var(--ctrl-soft);color:var(--ctrl)}
-  .notes{columns:2;column-gap:30px;font-size:.9rem}
-  @media(max-width:760px){.notes{columns:1}}
-  .notes h3{font-size:.98rem;margin:12px 0 4px;break-after:avoid;font-variant:small-caps}
-  .notes ul{margin:4px 0;padding-left:20px}
-  footer{text-align:center;color:var(--muted);font-style:italic;font-size:.8rem;padding:10px}
-  #errBanner{display:none;position:fixed;top:0;left:0;right:0;background:var(--accent);color:#f9f5e8;padding:10px 16px;font-family:var(--mono);font-size:13px;z-index:99}
-  details summary{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
-  #permPanel{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
-  #permPanel .ptitle{font-family:var(--mono);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
-  #permList{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:4px}
-  .perm{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:2px;background:#fffdf4;padding:4px 7px;font-family:var(--mono);font-size:.78rem;transition:background .2s,border-color .2s}
-  .perm .pn{color:var(--muted);font-weight:700}
-  .perm .pv{letter-spacing:.06em}
-  .perm .uc{margin-left:auto;font-size:.65rem;font-weight:700;color:var(--pick)}
-  .perm.used{box-shadow:inset 0 0 0 1px var(--pick)}
-  .perm.selected{background:var(--pick);border-color:var(--pick);color:#f9f5e8}
-  .perm.selected .pn{color:#c8d3e2}
-  .perm.selected .uc{color:#f9f5e8}
-  #permHint{margin:8px 0 0;font-size:.8rem}
+/* Layout: same system as the propensity / multiple-imputation / sample-size simulations —
+   title + control bar on top, digit table and enrolment side by side, two chart cards beneath */
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --ink:#172031; --muted:#5B6576; --faint:#C6CED9; --grid:#E4E8EE;
+  --pe:#D6431B; --ctl:#2B67AC; --pair:#F1F4F8;
+  --treat:var(--pe); --ctrl:var(--ctl); --treat-soft:#FBE6DF; --ctrl-soft:#E1ECF8;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E131A; --surface:#161D27; --ink:#E6EBF2; --muted:#94A0B1; --faint:#3A4555; --grid:#222B37;
+  --pe:#FF7247; --ctl:#6BA6EC; --pair:#1E2733; --treat-soft:#3A211A; --ctrl-soft:#1B2C42; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E131A; --surface:#161D27; --ink:#E6EBF2; --muted:#94A0B1; --faint:#3A4555; --grid:#222B37;
+  --pe:#FF7247; --ctl:#6BA6EC; --pair:#1E2733; --treat-soft:#3A211A; --ctrl-soft:#1B2C42; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.4}
+.wrap{max-width:1200px;margin:0 auto;padding-block:18px 28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:14px}
+.wrap>*{min-width:0}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.6rem,3.2vw,2.4rem);letter-spacing:-.015em;margin:0;line-height:1.05;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:1.02rem}
+.tT{color:var(--treat);font-weight:700} .tC{color:var(--ctrl);font-weight:700}
+.muted{color:var(--muted);font-size:.9rem}
+.hidden{display:none !important}
+
+/* controls */
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.bar .push{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.ctl{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--muted);font-weight:700}
+.btn,.seg button,select,input[type=number]{font:700 .92rem var(--f-body);color:var(--muted);background:var(--surface);border:1px solid var(--faint)}
+.btn{padding:7px 14px;border-radius:999px;cursor:pointer}
+.btn:hover{color:var(--ink);border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary:hover{opacity:.88;color:var(--bg)}
+select,input[type=number]{padding:6px 10px;border-radius:999px;color:var(--ink)}
+select{cursor:pointer}
+input[type=number]{width:5.2em;font:500 .9rem var(--f-mono)}
+.seg{display:inline-flex;border:1px solid var(--faint);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;border-radius:0;padding:6px 12px;font-size:.88rem;background:transparent;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg.big button{padding:9px 18px;font-size:1rem}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,.cell:focus-visible{outline:3px solid var(--ctl);outline-offset:2px}
+#ruleLegend{margin:-4px 0 0}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--grid);border-radius:16px;padding:14px 16px;min-width:0}
+.card h2{margin:0 0 10px;font:700 .8rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.card h2 .n{font:500 .78rem var(--f-mono);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid currentColor;flex:none;letter-spacing:0}
+.card p{margin:0 0 10px}
+.workspace{display:grid;grid-template-columns:minmax(330px,440px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:880px){.workspace{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* digit table */
+#grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:12px}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font:500 15px var(--f-mono);background:var(--pair);border:1px solid var(--grid);border-radius:6px;cursor:pointer;user-select:none;color:var(--ink)}
+.cell:hover{border-color:var(--ink)}
+.cell.start{outline:3px solid var(--muted);outline-offset:-1px}
+.cell.cursor{outline:3px dashed var(--ink);outline-offset:-1px}
+.cell.u-T{background:var(--treat);border-color:var(--treat);color:var(--surface)}
+.cell.u-C{background:var(--ctrl);border-color:var(--ctrl);color:var(--surface)}
+.cell.pick{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.cell.skip{background:transparent;color:var(--faint);text-decoration:line-through}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:.85rem;color:var(--muted)}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+
+/* enrolment */
+#narration{background:var(--pair);border-radius:10px;border-left:4px solid var(--ink);padding:10px 13px;font-size:.95rem;min-height:44px;margin-top:12px}
+#narration.alert{border-left-color:var(--pe);color:var(--pe);font-weight:700}
+.patient-card{display:flex;align-items:center;gap:16px;border:1px solid var(--grid);border-radius:12px;padding:12px 14px;margin:12px 0}
+.patient-card .pnum{font:500 .78rem var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.patient-card .psrc{font-size:.95rem;max-width:340px}
+.badge{margin-left:auto;font:800 1.6rem var(--f-display);padding:8px 16px;border-radius:12px;color:var(--surface);background:var(--faint);min-width:64px;text-align:center}
+.badge.T{background:var(--treat)} .badge.C{background:var(--ctrl)}
+.tally{display:flex;gap:14px;margin:12px 0 6px}
+.tally .grp{flex:1}
+.tally .lbl{display:flex;justify-content:space-between;align-items:center;font:500 .95rem var(--f-mono)}
+.meter{height:10px;border-radius:999px;background:var(--pair);overflow:hidden;margin-top:6px}
+.meter div{height:100%;width:0;border-radius:999px;transition:width .25s}
+#barT div{background:var(--treat)} #barC div{background:var(--ctrl)}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font:700 .8rem var(--f-body)}
+.pill.T{background:var(--treat-soft);color:var(--treat)} .pill.C{background:var(--ctrl-soft);color:var(--ctrl)}
+#chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;min-height:24px}
+.chip{width:22px;height:22px;border-radius:50%;color:var(--surface);font:500 .7rem var(--f-mono);display:flex;align-items:center;justify-content:center}
+.chip.T{background:var(--treat)} .chip.C{background:var(--ctrl)}
+#permPanel{margin-top:14px;border-top:1px solid var(--grid);padding-top:12px}
+#permPanel .ptitle{font:700 .8rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+#permPanel .ptitle span{text-transform:none;letter-spacing:0;font-weight:400}
+#permList{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:4px}
+.perm{display:flex;align-items:center;gap:6px;border:1px solid var(--grid);border-radius:8px;padding:4px 8px;font:500 .8rem var(--f-mono);transition:background .2s,border-color .2s}
+.perm .pn{color:var(--muted)}
+.perm .pv{letter-spacing:.06em}
+.perm .uc{margin-left:auto;font-size:.7rem}
+.perm.used{border-color:var(--muted)}
+.perm.selected{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.perm.selected .pn{color:inherit;opacity:.7}
+#permHint{margin:8px 0 0}
+details summary{cursor:pointer;font:700 .8rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#log{max-height:150px;overflow:auto;font:500 .8rem var(--f-mono);margin:10px 0 0;padding-left:22px;color:var(--muted)}
+
+/* charts */
+canvas{display:block;width:100%;height:auto}
+.stats{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.92rem;margin-top:10px}
+.stats b{font:500 .92rem var(--f-mono)}
+
+/* notes */
+.notes{columns:2;column-gap:30px;font-size:.95rem;margin-top:12px}
+@media (max-width:760px){.notes{columns:1}}
+.notes h3{font:700 1rem var(--f-body);margin:12px 0 4px;break-after:avoid}
+.notes h3:first-child{margin-top:0}
+.notes ul,.notes ol{margin:4px 0;padding-left:20px}
+footer{color:var(--muted);font-size:.85rem;text-align:center}
+#errBanner{display:none;position:fixed;top:0;left:0;right:0;background:var(--pe);color:#fff;padding:10px 16px;font:500 13px var(--f-mono);z-index:99}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
 <div id="errBanner"></div>
+<div class="wrap">
 
-<header>
-  <h1>The Randomisation Table Simulator</h1>
-     <i>Armando Teixeira-Pinto</i>
-</header>
+  <header>
+    <div>
+      <h1>Randomisation from a table of digits</h1>
+      <p class="sub">Allocate patients to <b class="tT">Treatment</b> or <b class="tC">Control</b> the way it was done on paper, then see how far the groups drift apart.</p>
+    </div>
+    <span class="seg big" id="methodSeg" role="group" aria-label="Randomisation method">
+      <button type="button" data-v="simple" aria-pressed="true" title="Like flipping a coin">Simple</button>
+      <button type="button" data-v="blocked" aria-pressed="false" title="Keeps groups balanced">Blocked</button>
+    </span>
+    <select id="method" class="hidden" aria-hidden="true" tabindex="-1">
+      <option value="simple">Simple</option>
+      <option value="blocked">Blocked</option>
+    </select>
+  </header>
 
-<main>
-
-<section class="card">
-  <h2>How a randomisation table was used &mdash; the four classic steps</h2>
-  <p class="muted" style="margin-top:0">
-    <b>1.</b> Open the table of random digits. &nbsp;
-    <b>2.</b> Choose a starting point &ldquo;by chance&rdquo; (traditionally: close your eyes and drop a pencil on the page). &nbsp;
-    <b>3.</b> Apply a pre-written rule converting digits into allocations. &nbsp;
-    <b>4.</b> Enrol patients in order and read off their allocation, one digit at a time.
-    Nobody can predict or choose the next assignment &mdash; that is the whole point.
-  </p>
-</section>
-
-<section class="card">
-  <h2><span class="stepnum">1</span> Set up your trial</h2>
-  <div class="controls">
-    <label class="ctrl">Patients to enrol
+  <div class="bar">
+    <label class="ctl">Patients
       <input type="number" id="nPatients" min="4" max="120" value="20">
     </label>
-    <label class="ctrl">Randomisation method
-      <select id="method">
-        <option value="simple">Simple (like flipping a coin)</option>
-        <option value="blocked">Blocked (keeps groups balanced)</option>
-      </select>
-    </label>
-    <label class="ctrl" id="ruleWrap">Digit rule
+    <label class="ctl" id="ruleWrap">Digit rule
       <select id="rule">
         <option value="lowhigh">0&ndash;4 &rarr; Control &middot; 5&ndash;9 &rarr; Treatment</option>
         <option value="oddeven">Odd &rarr; Treatment &middot; Even &rarr; Control</option>
       </select>
     </label>
-    <label class="ctrl hidden" id="blockWrap">Block size
+    <label class="ctl hidden" id="blockWrap">Block size
       <select id="blockSize">
         <option value="4">4 (permutations of TTCC)</option>
         <option value="6">6 (permutations of TTTCCC)</option>
       </select>
     </label>
-    <button class="primary" id="btnGenerate">Generate new table</button>
+    <label class="ctl">Read
+      <select id="direction">
+        <option value="right" selected>Right &rarr;</option>
+        <option value="left">Left &larr;</option>
+        <option value="down">Down &darr;</option>
+        <option value="up">Up &uarr;</option>
+      </select>
+    </label>
+    <span class="push">
+      <button class="btn" id="btnGenerate" type="button">&#8635; New table</button>
+    </span>
   </div>
-  <p class="muted" id="ruleLegend" style="margin-bottom:0;margin-top:10px"></p>
-</section>
+  <p class="muted" id="ruleLegend"></p>
 
-<div class="workspace">
+  <div class="workspace">
+
+    <section class="card">
+      <h2><span class="n">1</span> The random digit table</h2>
+      <p class="muted">Click any cell to place your pencil, or leave the starting point to chance.</p>
+      <button id="btnPencil" class="btn" type="button">Drop the pencil</button>
+      <div id="grid"></div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--treat)"></span>Treatment</span>
+        <span><span class="swatch" style="background:var(--ctrl)"></span>Control</span>
+        <span><span class="swatch" style="background:var(--ink)"></span>Block permutation pick</span>
+        <span><span class="swatch" style="border:1px solid var(--faint)"></span>Skipped digit</span>
+      </div>
+    </section>
+
+    <div class="col">
+    <section class="card">
+      <h2><span class="n">2</span> Enrol patients &amp; allocate</h2>
+      <div class="row">
+        <button class="btn primary" id="btnStep" type="button">Next patient</button>
+        <button class="btn" id="btnPlay" type="button">Play</button>
+        <button class="btn" id="btnRunAll" type="button">Run all</button>
+        <button class="btn" id="btnReset" type="button">Reset</button>
+      </div>
+
+      <div id="narration" role="status">Welcome. First choose a starting cell (or drop the pencil), then press <b>Next patient</b>.</div>
+
+      <div class="patient-card">
+        <div>
+          <div class="pnum" id="pNum">No patient yet</div>
+          <div class="psrc" id="pSrc">The next patient&rsquo;s allocation will appear here.</div>
+        </div>
+        <div class="badge" id="pBadge">?</div>
+      </div>
+
+      <div class="tally">
+        <div class="grp">
+          <div class="lbl"><span class="pill T">Treatment</span><span id="cntT">0</span></div>
+          <div class="meter" id="barT"><div></div></div>
+        </div>
+        <div class="grp">
+          <div class="lbl"><span class="pill C">Control</span><span id="cntC">0</span></div>
+          <div class="meter" id="barC"><div></div></div>
+        </div>
+      </div>
+      <div id="chips"></div>
+      <div class="muted" id="diffLine" style="margin-top:6px"></div>
+
+      <div id="permPanel" class="hidden">
+        <div class="ptitle">Permutation lookup table <span id="permTitle"></span></div>
+        <div id="permList"></div>
+        <p class="muted" id="permHint"></p>
+      </div>
+
+      <details style="margin-top:12px"><summary>Event log</summary>
+        <ul id="log"></ul>
+      </details>
+    </section>
+    <section class="card">
+      <h2><span class="n">3</span> Running difference &middot; Treatment &minus; Control</h2>
+      <p class="muted">Simple randomisation can drift far from balance in small trials; blocked randomisation snaps back to zero at the end of every block.</p>
+      <canvas id="diffChart" width="1100" height="330" role="img" aria-label="Running difference between the number of Treatment and Control patients"></canvas>
+    </section>
+
+    </div>
+  </div>
 
   <section class="card">
-    <h2><span class="stepnum">2</span> The random digit table</h2>
-    <p class="muted" style="margin-top:0">Each cell is one random digit (0&ndash;9).
-       Click any cell to place your pencil, or leave it to chance:</p>
-    <div class="controls" style="margin-bottom:4px">
-      <label class="ctrl">Reading direction
-        <select id="direction">
-          <option value="right" selected>Right &rarr;</option>
-          <option value="left">Left &larr;</option>
-          <option value="down">Down &darr;</option>
-          <option value="up">Up &uarr;</option>
-        </select>
-      </label>
-      <button id="btnPencil" class="ghost">Drop the pencil (random start)</button>
-    </div>
-    <div id="grid"></div>
-    <div class="legend">
-      <span><span class="swatch" style="background:var(--treat)"></span>digit &rarr; Treatment</span>
-      <span><span class="swatch" style="background:var(--ctrl)"></span>digit &rarr; Control</span>
-      <span><span class="swatch" style="background:var(--pick)"></span>block permutation pick</span>
-      <span><span class="swatch" style="background:#eee7d3"></span>skipped digit</span>
-    </div>
+      <h2><span class="n">4</span> Repeat the trial 2,000 times</h2>
+      <p class="muted">One randomisation is just one possible outcome. Re-run this exact design 2,000 times to see the distribution of the final imbalance.</p>
+      <button class="btn primary" id="btnMC" type="button">Run 2,000 virtual trials</button>
+      <canvas id="histChart" width="1500" height="330" style="margin-top:10px" role="img" aria-label="Histogram of final imbalance across 2,000 simulated trials"></canvas>
+      <div class="stats" id="mcStats"></div>
   </section>
 
-  <section class="card">
-    <h2><span class="stepnum">3</span> Enrol patients &amp; allocate</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <button class="primary" id="btnStep">Next patient</button>
-      <button id="btnPlay">Play</button>
-      <button id="btnRunAll">Run all</button>
-      <button class="ghost" id="btnReset">Reset</button>
+  <details class="card">
+    <summary>Teaching notes &amp; discussion questions</summary>
+    <div class="notes">
+      <h3>How a randomisation table was used</h3>
+      <ol>
+        <li>Open the table of random digits.</li>
+        <li>Choose a starting point &ldquo;by chance&rdquo; (traditionally: close your eyes and drop a pencil on the page).</li>
+        <li>Apply a pre-written rule converting digits into allocations.</li>
+        <li>Enrol patients in order and read off their allocation, one digit at a time. Nobody can predict or choose the next assignment &mdash; that is the whole point.</li>
+      </ol>
+      <h3>Why randomise at all?</h3>
+      <ul>
+        <li>Random allocation removes <b>selection bias</b>: the investigator cannot steer healthier or sicker patients into one arm.</li>
+        <li>It makes groups comparable <i>on average</i> &mdash; even for factors nobody measured.</li>
+        <li>It underpins the statistics: p-values assume treatment was assigned by chance.</li>
+      </ul>
+      <h3>Why not alternate (A, B, A, B&hellip;)?</h3>
+      <ul>
+        <li>Alternation balances perfectly but is 100% predictable. Allocation must be <b>unpredictable</b> and <b>concealed</b> (sealed opaque envelopes, central pharmacy, web systems).</li>
+      </ul>
+      <h3>A slice of history</h3>
+      <ul>
+        <li>1927 &mdash; Tippett publishes the first printed random-digit tables.</li>
+        <li>1938 &mdash; Fisher &amp; Yates include them in their statistical tables.</li>
+        <li>1955 &mdash; RAND prints <i>A Million Random Digits</i>, generated by an electronic roulette wheel.</li>
+        <li>Today the same logic runs in software &mdash; the principle is unchanged.</li>
+      </ul>
+      <h3>Simple vs blocked</h3>
+      <ul>
+        <li><b>Simple:</b> like coin-flipping; small trials can end lopsided (try n = 20 several times).</li>
+        <li><b>Blocked:</b> every block holds exactly half Treatment / half Control. Trade-off: with a fixed, known block size in an open-label trial, late allocations become guessable &mdash; real trials use randomly varying block sizes.</li>
+      </ul>
+      <h3>Questions for students</h3>
+      <ul>
+        <li>Run simple randomisation with n = 20 five times. How often did you get exactly 10 vs 10? Compare with the theoretical probability shown by the Monte-Carlo panel.</li>
+        <li>Why does blocked randomisation always end balanced when n is a multiple of the block size? What happens when it is not?</li>
+        <li>Block size 4, open-label trial, block so far is T, T, C. What must come next &mdash; and why is that a problem?</li>
+        <li>Which digits get skipped with block size 4, and why is skipping legitimate?</li>
+      </ul>
     </div>
+  </details>
 
-    <div id="narration" style="margin-top:12px">Welcome. First choose a starting cell (or drop the pencil), then press <b>Next patient</b>.</div>
-
-    <div class="patient-card">
-      <div>
-        <div class="pnum" id="pNum">No patient yet</div>
-        <div class="psrc" id="pSrc">The next patient&rsquo;s allocation will appear here.</div>
-      </div>
-      <div class="badge" id="pBadge">?</div>
-    </div>
-
-    <div class="tally">
-      <div class="grp">
-        <div class="lbl"><span class="pill T">Treatment</span><span id="cntT">0</span></div>
-        <div class="bar" id="barT"><div></div></div>
-      </div>
-      <div class="grp">
-        <div class="lbl"><span class="pill C">Control</span><span id="cntC">0</span></div>
-        <div class="bar" id="barC"><div></div></div>
-      </div>
-    </div>
-    <div id="chips"></div>
-    <div class="muted" id="diffLine" style="margin-top:6px"></div>
-
-    <div id="permPanel" class="hidden">
-      <div class="ptitle">Permutation lookup table <span id="permTitle"></span></div>
-      <div id="permList"></div>
-      <p class="muted" id="permHint"></p>
-    </div>
-
-    <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Event log</summary>
-      <ul id="log"></ul>
-    </details>
-  </section>
+  <footer>Armando Teixeira-Pinto</footer>
 </div>
-
-<div class="charts">
-<section class="card">
-  <h2><span class="stepnum">4</span> Watch the balance drift &mdash; running difference (Treatment &minus; Control)</h2>
-  <p class="muted" style="margin-top:0">The line wanders around zero. Simple randomisation can drift far from balance in small trials; blocked randomisation snaps back to zero at the end of every block.</p>
-  <canvas id="diffChart" width="900" height="230"></canvas>
-</section>
-
-<section class="card">
-  <h2><span class="stepnum">5</span> &ldquo;But how often does it actually balance?&rdquo; &mdash; repeat the trial 2,000 times</h2>
-  <p class="muted" style="margin-top:0">One randomisation is just one possible outcome. This panel re-runs your exact design 2,000 times and shows the distribution of the final imbalance (Treatment &minus; Control).</p>
-  <button class="primary" id="btnMC">Run 2,000 virtual trials</button>
-  <div class="stats" id="mcStats"></div>
-  <canvas id="histChart" width="900" height="240" style="margin-top:12px"></canvas>
-</section>
-</div>
-
-<section class="card">
-  <h2>Teaching notes &amp; discussion questions</h2>
-  <div class="notes">
-    <h3>Why randomise at all?</h3>
-    <ul>
-      <li>Random allocation removes <b>selection bias</b>: the investigator cannot steer healthier or sicker patients into one arm.</li>
-      <li>It makes groups comparable <i>on average</i> &mdash; even for factors nobody measured.</li>
-      <li>It underpins the statistics: p-values assume treatment was assigned by chance.</li>
-    </ul>
-    <h3>Why not alternate (A, B, A, B&hellip;)?</h3>
-    <ul>
-      <li>Alternation balances perfectly but is 100% predictable. Allocation must be <b>unpredictable</b> and <b>concealed</b> (sealed opaque envelopes, central pharmacy, web systems).</li>
-    </ul>
-    <h3>A slice of history</h3>
-    <ul>
-      <li>1927 &mdash; Tippett publishes the first printed random-digit tables.</li>
-      <li>1938 &mdash; Fisher &amp; Yates include them in their statistical tables.</li>
-      <li>1955 &mdash; RAND prints <i>A Million Random Digits</i>, generated by an electronic roulette wheel.</li>
-      <li>Today the same logic runs in software &mdash; the principle is unchanged.</li>
-    </ul>
-    <h3>Simple vs blocked</h3>
-    <ul>
-      <li><b>Simple:</b> like coin-flipping; small trials can end lopsided (try n = 20 several times).</li>
-      <li><b>Blocked:</b> every block holds exactly half Treatment / half Control. Trade-off: with a fixed, known block size in an open-label trial, late allocations become guessable &mdash; real trials use randomly varying block sizes.</li>
-    </ul>
-    <h3>Questions for students</h3>
-    <ul>
-      <li>Run simple randomisation with n = 20 five times. How often did you get exactly 10 vs 10? Compare with the theoretical probability shown by the Monte-Carlo panel.</li>
-      <li>Why does blocked randomisation always end balanced when n is a multiple of the block size? What happens when it is not?</li>
-      <li>Block size 4, open-label trial, block so far is T, T, C. What must come next &mdash; and why is that a problem?</li>
-      <li>Which digits get skipped with block size 4, and why is skipping legitimate?</li>
-    </ul>
-  </div>
-</section>
-
-
-</main>
 
 <script>
 "use strict";
@@ -300,8 +324,16 @@ var blockPerm = null, blockPtr = 0, blocksUsed = 0;
 var playTimer = null;
 var permUse = {}, selectedPerm = -1, lastPermKey = "";
 
-var COL_LINE = "#b9ad8d", COL_AXIS = "#7d7360", COL_TRACE = "#262218", COL_PICK = "#2e4057";
-var COL_TREAT = "#2e6b4f", COL_CTRL = "#a4700f";
+var COL_LINE, COL_AXIS, COL_TRACE, COL_PICK, COL_TREAT, COL_CTRL;
+var CHART_FONT = '20px "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif';
+var mcData = null;
+function readColours(){
+  var cs = getComputedStyle(document.documentElement);
+  function v(n){ return cs.getPropertyValue(n).trim(); }
+  COL_LINE = v("--faint"); COL_AXIS = v("--muted"); COL_TRACE = v("--ink"); COL_PICK = v("--ink");
+  COL_TREAT = v("--pe"); COL_CTRL = v("--ctl");
+}
+readColours();
 
 function rndDigit(){ return Math.floor(Math.random()*10); }
 function key(r,c){ return r + "," + c; }
@@ -569,7 +601,7 @@ function pushPatient(label, srcHTML){
   chip.title = "Patient " + i;
   $("chips").appendChild(chip);
   var li = document.createElement("li");
-  li.innerHTML = "#" + i + " &rarr; <b style='color:" + ((label === "T") ? COL_TREAT : COL_CTRL) + "'>" +
+  li.innerHTML = "#" + i + " &rarr; <b class='" + ((label === "T") ? "tT" : "tC") + "'>" +
                  ((label === "T") ? "Treatment" : "Control") + "</b> (" + srcHTML + ")";
   $("log").insertBefore(li, $("log").firstChild);
   while($("log").children.length > 80) $("log").removeChild($("log").lastChild);
@@ -614,28 +646,30 @@ function drawDiffChart(){
   var cv = $("diffChart"), ctx = cv.getContext("2d");
   var W = cv.width, H = cv.height;
   ctx.clearRect(0,0,W,H);
-  var padL = 40, padR = 14, padT = 14, padB = 28;
+  var padL = 48, padR = 16, padT = 18, padB = 40;
   var s = [0], d = 0, i;
   for(i=0;i<assignments.length;i++){ d += (assignments[i] === "T") ? 1 : -1; s.push(d); }
   var maxY = 3;
   for(i=0;i<s.length;i++) if(Math.abs(s[i]) > maxY) maxY = Math.abs(s[i]);
   function X(k){ return padL + (assignments.length ? k/assignments.length : 0) * (W-padL-padR); }
   function Y(v){ return padT + (1 - (v+maxY)/(2*maxY)) * (H-padT-padB); }
-  ctx.font = "13px Georgia, serif";
+  ctx.font = CHART_FONT;
   ctx.fillStyle = COL_AXIS;
   ctx.textAlign = "right";
-  ctx.fillText(maxY, padL-8, Y(maxY)+4);
-  ctx.fillText(0, padL-8, Y(0)+4);
-  ctx.fillText(-maxY, padL-8, Y(-maxY)+4);
+  ctx.fillText(maxY, padL-10, Y(maxY)+7);
+  ctx.fillText(0, padL-10, Y(0)+7);
+  ctx.fillText(-maxY, padL-10, Y(-maxY)+7);
   ctx.setLineDash([5,4]);
   ctx.strokeStyle = COL_LINE;
   ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(W-padR, Y(0)); ctx.stroke();
   ctx.setLineDash([]);
   ctx.textAlign = "center";
-  ctx.fillText("perfect balance", padL+58, Y(0)-6);
-  ctx.fillText("patient number", W/2, H-6);
+  ctx.textAlign = "left";
+  ctx.fillText("perfect balance", padL+8, Y(0)-9);
+  ctx.textAlign = "center";
+  ctx.fillText("patient number", W/2, H-10);
   ctx.strokeStyle = COL_TRACE;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = 3;
   ctx.beginPath();
   for(i=0;i<s.length;i++){
     if(i === 0) ctx.moveTo(X(i), Y(s[i]));
@@ -647,12 +681,36 @@ function drawDiffChart(){
     var last = s[s.length-1];
     ctx.fillStyle = (last > 0) ? COL_TREAT : (last < 0) ? COL_CTRL : COL_PICK;
     ctx.beginPath();
-    ctx.arc(X(s.length-1), Y(last), 5, 0, 6.2832);
+    ctx.arc(X(s.length-1), Y(last), 7, 0, 6.2832);
     ctx.fill();
   }
 }
 
 function lnFact(n){ var s = 0; for(var i=2;i<=n;i++) s += Math.log(i); return s; }
+
+function drawHist(){
+  var cv = $("histChart"), ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!mcData) return;
+  var padL = 16, padR = 16, padB = 44, padT = 16;
+  var keys = mcData.keys, bins = mcData.bins, maxC = mcData.maxC, i;
+  var bw = (W-padL-padR)/keys.length;
+  for(i=0;i<keys.length;i++){
+    var h = bins[keys[i]]/maxC * (H-padT-padB);
+    ctx.fillStyle = (keys[i] > 0) ? COL_TREAT : (keys[i] < 0) ? COL_CTRL : COL_PICK;
+    ctx.fillRect(padL + i*bw + 1, H - padB - h, Math.max(bw-2,1), h);
+  }
+  ctx.fillStyle = COL_AXIS;
+  ctx.font = CHART_FONT;
+  ctx.textAlign = "center";
+  ctx.textAlign = "left";
+  ctx.fillText("more Control", padL, H-12);
+  ctx.textAlign = "center";
+  ctx.fillText("final imbalance (T \u2212 C)", W/2, H-12);
+  ctx.textAlign = "right";
+  ctx.fillText("more Treatment", W-padR, H-12);
+}
 
 function runMonteCarlo(){
   readCfg();
@@ -683,22 +741,8 @@ function runMonteCarlo(){
   keys.sort(function(a,b){ return a-b; });
   var maxC = 1;
   for(i=0;i<keys.length;i++) if(bins[keys[i]] > maxC) maxC = bins[keys[i]];
-  var cv = $("histChart"), ctx = cv.getContext("2d");
-  var W = cv.width, H = cv.height;
-  ctx.clearRect(0,0,W,H);
-  var padL = 16, padR = 16, padB = 30, padT = 16;
-  var bw = (W-padL-padR)/keys.length;
-  for(i=0;i<keys.length;i++){
-    var h = bins[keys[i]]/maxC * (H-padT-padB);
-    ctx.fillStyle = (keys[i] > 0) ? COL_TREAT : (keys[i] < 0) ? COL_CTRL : COL_PICK;
-    ctx.fillRect(padL + i*bw + 1, H - padB - h, Math.max(bw-2,1), h);
-  }
-  ctx.fillStyle = COL_AXIS;
-  ctx.font = "13px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("more Control", padL+60, H-8);
-  ctx.fillText("final imbalance (Treatment - Control)", W/2, H-8);
-  ctx.fillText("more Treatment", W-padR-60, H-8);
+  mcData = {keys:keys, bins:bins, maxC:maxC};
+  drawHist();
   var balanced = 0, absSum = 0;
   for(i=0;i<diffs.length;i++){ if(diffs[i] === 0) balanced++; absSum += Math.abs(diffs[i]); }
   var html = "<span>Trials run: <b>" + reps + "</b></span>" +
@@ -733,7 +777,8 @@ function resetRun(){
   $("barC").firstElementChild.style.width = "0%";
   $("diffLine").textContent = "";
   $("mcStats").innerHTML = "";
-  $("histChart").getContext("2d").clearRect(0,0,900,240);
+  mcData = null;
+  drawHist();
   if(grid.length) paintAll();
   drawDiffChart();
   if(started){
@@ -757,11 +802,13 @@ function togglePlay(){
 function readCfg(){
   cfg.n = Math.max(4, Math.min(120, parseInt($("nPatients").value, 10) || 20));
   cfg.method = $("method").value;
+  var segBtns = $("methodSeg").children;
+  for(var sb=0; sb<segBtns.length; sb++) segBtns[sb].setAttribute("aria-pressed", String(segBtns[sb].getAttribute("data-v") === cfg.method));
   cfg.rule = $("rule").value;
   cfg.blockSize = parseInt($("blockSize").value, 10);
   cfg.direction = $("direction").value;
-  $("ruleWrap").className = "ctrl" + ((cfg.method === "simple") ? "" : " hidden");
-  $("blockWrap").className = "ctrl" + ((cfg.method === "blocked") ? "" : " hidden");
+  $("ruleWrap").className = "ctl" + ((cfg.method === "simple") ? "" : " hidden");
+  $("blockWrap").className = "ctl" + ((cfg.method === "blocked") ? "" : " hidden");
   if(cfg.method === "simple"){
     $("ruleLegend").innerHTML = ruleText();
   } else {
@@ -804,6 +851,16 @@ for(var si=0; si<settingIds.length; si++){
     if(grid.length){ resetRun(); }
   });
 }
+
+$("methodSeg").addEventListener("click", function(e){
+  var v = e.target.getAttribute && e.target.getAttribute("data-v");
+  if(!v || v === $("method").value) return;
+  $("method").value = v;
+  $("method").dispatchEvent(new Event("change"));
+});
+function redrawCharts(){ readColours(); drawDiffChart(); drawHist(); }
+if(window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCharts);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCharts);
 
 readCfg();
 generateTable();
